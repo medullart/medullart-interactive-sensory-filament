@@ -1,0 +1,43 @@
+/**
+ * ⚠️ THEME CONFIGURATION — Tailwind v4
+ * MEDULLART Sensorial System Theme
+ */
+@theme {
+	/* Colors - Dark Biotechnical */
+	--color-void: #000000;
+	--color-pure: #ffffff;
+	--color-tech-gray: #444444;
+	--color-tech-dim: #222222;
+	--color-alert: #ff3333;
+	--color-calm: #33ffcc;
+	--color-energy: #ffcc33;
+
+	--color-primary: #ffffff;
+	--color-primary-foreground: #000000;
+
+	--color-secondary: #444444;
+	--color-secondary-foreground: #ffffff;
+
+	--color-destructive: #ff3333;
+	--color-destructive-foreground: #000000;
+
+	--color-muted: #222222;
+	--color-muted-foreground: #666666;
+
+	--color-accent: #33ffcc;
+	--color-accent-foreground: #000000;
+
+	--color-border: #333333;
+	--color-input: #222222;
+	--color-ring: #ffffff;
+
+	/* Typography */
+	--font-mono: 'JetBrains Mono', monospace;
+	--font-sans: 'Space Grotesk', system-ui, sans-serif;
+
+	/* Radius */
+	--radius-sm: 0;
+	--radius-md: 0;
+	--radius-lg: 0;
+	--radius-xl: 0;
+}
