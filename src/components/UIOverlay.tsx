@@ -227,8 +227,8 @@ export function UIOverlay({
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck="false"
-          enterKeyHint="send"
-        />
+          enterKeyHint="send" />
+
 
         
         <div data-ev-id="ev_209460c833" className="flex items-end gap-4">
@@ -350,6 +350,15 @@ export function UIOverlay({
         style={{ height: `${Math.max(audioData.treble * 100, 2)}%` }} />
 
       </div>
+
+      {/* Drag hint - only show in idle mode */}
+      {systemMode === 'idle' &&
+      <div data-ev-id="ev_drag_hint" className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-10">
+          <div data-ev-id="ev_ccef9b32f2" className="font-mono text-[10px] text-white/30 tracking-wider text-center animate-pulse">
+            ← DRAG FILAMENT TO EXPLORE CODEX →
+          </div>
+        </div>
+      }
     </>);
 
 }

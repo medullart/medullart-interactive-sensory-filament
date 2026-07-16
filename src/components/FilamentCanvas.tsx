@@ -16,6 +16,7 @@ interface FilamentCanvasProps {
   enterVibration: number;
   textLength: number;
   enterPressed: boolean;
+  onFilamentDrag?: () => void;
 }
 
 // Chromatic colors for light emission
@@ -44,7 +45,8 @@ export function FilamentCanvas({
   clickIntensity,
   enterVibration,
   textLength,
-  enterPressed
+  enterPressed,
+  onFilamentDrag
 }: FilamentCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -69,6 +71,77 @@ export function FilamentCanvas({
   const sparksRef = useRef<Spark[]>([]);
   const sparkPointsRef = useRef<THREE.Points | null>(null);
   const lastKeyTimestampRef = useRef(0);
+
+  // Drag detection refs
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const dragDistanceRef = useRef(0);
+
+  // Drag detection for opening world view
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      isDraggingRef.current = true;
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      dragDistanceRef.current = 0;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDraggingRef.current) {
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        dragDistanceRef.current = Math.sqrt(dx * dx + dy * dy);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current && dragDistanceRef.current > 100) {
+        // Dragged far enough - trigger world view
+        onFilamentDrag?.();
+      }
+      isDraggingRef.current = false;
+      dragDistanceRef.current = 0;
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        isDraggingRef.current = true;
+        dragStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        dragDistanceRef.current = 0;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isDraggingRef.current && e.touches.length > 0) {
+        const dx = e.touches[0].clientX - dragStartRef.current.x;
+        const dy = e.touches[0].clientY - dragStartRef.current.y;
+        dragDistanceRef.current = Math.sqrt(dx * dx + dy * dy);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      if (isDraggingRef.current && dragDistanceRef.current > 100) {
+        onFilamentDrag?.();
+      }
+      isDraggingRef.current = false;
+      dragDistanceRef.current = 0;
+    };
+
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [onFilamentDrag]);
 
   // Memoize color based on sentiment or enterPressed (pink)
   const filamentColor = useMemo(() => {

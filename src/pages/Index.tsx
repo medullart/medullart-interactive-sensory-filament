@@ -3,6 +3,7 @@ import { FilamentCanvas } from '@/components/FilamentCanvas';
 import { HumanoidMesh } from '@/components/HumanoidMesh';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { UIOverlay } from '@/components/UIOverlay';
+import { MedullartWorld } from '@/components/MedullartWorld';
 import { useKeyboardInput } from '@/hooks/useKeyboardInput';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useFileAudioAnalyzer } from '@/hooks/useFileAudioAnalyzer';
@@ -59,6 +60,15 @@ export default function Index() {
 
   const { playSpringSound, playEnterSound } = useClickSound();
   const [enterPressed, setEnterPressed] = useState(false);
+  const [worldViewOpen, setWorldViewOpen] = useState(false);
+
+  // Handle filament drag to open world view
+  const handleFilamentDrag = useCallback(() => {
+    if (systemMode === 'idle') {
+      playSpringSound();
+      setWorldViewOpen(true);
+    }
+  }, [systemMode, playSpringSound]);
 
   const activeAudioData = systemMode === 'render' && fileState.isPlaying ?
   fileAudioData :
@@ -212,7 +222,8 @@ export default function Index() {
           clickIntensity={clickIntensity}
           enterVibration={enterVibration}
           textLength={inputText.length}
-          enterPressed={enterPressed} />
+          enterPressed={enterPressed}
+          onFilamentDrag={handleFilamentDrag} />
 
       </div>
 
@@ -254,6 +265,12 @@ export default function Index() {
           onMobileEnter={handleMobileEnter} />
 
       </div>
+
+      {/* Medullart World Map - opens when filament is dragged */}
+      <MedullartWorld 
+        isOpen={worldViewOpen} 
+        onClose={() => setWorldViewOpen(false)} 
+      />
     </div>);
 
 }
