@@ -420,6 +420,10 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
     
     featureMeshesRef.current.push(leftEye, rightEye, leftGlow, rightGlow);
     
+    // Store eye references for animation
+    (faceGroup as THREE.Group & { leftEye?: THREE.Mesh; rightEye?: THREE.Mesh }).leftEye = leftEye;
+    (faceGroup as THREE.Group & { leftEye?: THREE.Mesh; rightEye?: THREE.Mesh }).rightEye = rightEye;
+    
     // === SUBTLE NOSE LINE ===
     const noseGeometry = new THREE.CylinderGeometry(0.02, 0.04, 0.35, 8);
     const noseMaterial = new THREE.MeshPhysicalMaterial({
@@ -663,6 +667,35 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
         }
         
         const beatHit = beatIntensityRef.current;
+        
+        // === CHAOTIC EYE MOVEMENT based on treble/high frequencies ===
+        const faceGroupTyped = faceGroupRef.current as THREE.Group & { leftEye?: THREE.Mesh; rightEye?: THREE.Mesh };
+        if (faceGroupTyped.leftEye && faceGroupTyped.rightEye) {
+          // Treble-driven micro-movement - chaotic and fast
+          const eyeChaosX = Math.sin(time * 25 + treble * 50) * treble * 0.15;
+          const eyeChaosY = Math.cos(time * 30 + high * 40) * high * 0.12;
+          const eyeSpasm = beatHit * Math.sin(time * 80) * 0.08;
+          
+          // Random direction changes on beats
+          const randomAngle = time * 3 + beatHit * Math.PI * 2;
+          const randomOffsetX = Math.sin(randomAngle) * beatHit * 0.1;
+          const randomOffsetY = Math.cos(randomAngle * 1.3) * beatHit * 0.08;
+          
+          // Apply to left eye
+          faceGroupTyped.leftEye.rotation.x = eyeChaosY + eyeSpasm + randomOffsetY;
+          faceGroupTyped.leftEye.rotation.y = eyeChaosX + randomOffsetX;
+          faceGroupTyped.leftEye.rotation.z = Math.sin(time * 15 + treble * 20) * treble * 0.1;
+          
+          // Apply to right eye (slightly offset for organic feel)
+          faceGroupTyped.rightEye.rotation.x = eyeChaosY + eyeSpasm * 0.8 + randomOffsetY * 1.1;
+          faceGroupTyped.rightEye.rotation.y = -eyeChaosX - randomOffsetX * 0.9;
+          faceGroupTyped.rightEye.rotation.z = -Math.sin(time * 15 + treble * 20) * treble * 0.1;
+          
+          // Scale pulsing with bass
+          const eyeScale = 1 + bass * 0.2 + beatHit * 0.15;
+          faceGroupTyped.leftEye.scale.set(1.4 * eyeScale, 0.65 * eyeScale, 0.4);
+          faceGroupTyped.rightEye.scale.set(1.4 * eyeScale, 0.65 * eyeScale, 0.4);
+        }
 
         // === SPAWN FILAMENTS (very frequent) ===
         const timeSinceLastSpawn = time - lastSpawnTimeRef.current;
@@ -684,16 +717,17 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
         // === RHYTHM-BASED FACE MOVEMENT (teleport to various positions) ===
         const timeSinceTeleport = time - lastTeleportTimeRef.current;
         
-        // Teleport on strong beats - quantum/glitch style
-        if (beatHit > 0.45 && timeSinceTeleport > 0.5) {
-          // Pick a new random position - face stays in background area
+        // Teleport on strong beats - quantum/glitch style (more chaotic thresholds)
+        const teleportThreshold = 0.35 + Math.random() * 0.2; // Variable threshold for unpredictability
+        if (beatHit > teleportThreshold && timeSinceTeleport > 0.3) {
+          // Pick a new random position - more extreme range for chaos
           teleportTargetRef.current = {
-            x: (Math.random() - 0.5) * 2.8,
-            y: (Math.random() - 0.5) * 1.8,
-            z: -1.5 + Math.random() * 0.4 // Stay in background
+            x: (Math.random() - 0.5) * 3.5 + Math.sin(time * 7) * 0.5,
+            y: (Math.random() - 0.5) * 2.2 + Math.cos(time * 5) * 0.3,
+            z: -1.5 + Math.random() * 0.6 // Stay in background with depth variation
           };
           lastTeleportTimeRef.current = time;
-          glitchIntensityRef.current = beatHit * 1.2;
+          glitchIntensityRef.current = beatHit * 1.5;
           
           // Instant partial jump (glitch effect)
           const jumpFactor = 0.7;
@@ -788,13 +822,20 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
           filament.mesh.rotation.y = Math.sin(time * 0.3 + filament.floatPhase) * 0.05 * rotMultiplier;
           filament.mesh.rotation.z = Math.sin(time * 0.35 + filament.floatPhase) * 0.04 * rotMultiplier;
 
-          // BEAT = Strong reaction on snare/accents
+          // BEAT = Strong reaction on snare/accents - MORE CHAOTIC
           const beatReaction = beatHit;
-          const vibFreq = 30; // Fast vibration frequency
+          const vibFreq = 30 + Math.random() * 20; // Randomized vibration frequency
+          
+          // Add chaotic offset based on audio
+          const chaoticOffsetX = Math.sin(time * (15 + treble * 30) + filament.floatPhase) * treble * 0.15;
+          const chaoticOffsetZ = Math.cos(time * (12 + mid * 25) + filament.floatPhase * 1.5) * mid * 0.12;
+          filament.mesh.position.x += chaoticOffsetX;
+          filament.mesh.position.z += chaoticOffsetZ;
 
-          // More dramatic scale pulsing
-          filament.mesh.scale.y = 1 + beatReaction * 0.25 + bass * 0.08;
-          filament.mesh.scale.x = 1 + beatReaction * 0.15 + treble * 0.05;
+          // More dramatic scale pulsing with randomness
+          const scaleRandom = 1 + Math.sin(time * 50 + filament.floatPhase * 10) * 0.05;
+          filament.mesh.scale.y = (1 + beatReaction * 0.35 + bass * 0.12) * scaleRandom;
+          filament.mesh.scale.x = (1 + beatReaction * 0.2 + treble * 0.08) * scaleRandom;
 
           // Geometry deformation - calm normally, intense on beats
           const positions = filament.mesh.geometry.attributes.position.array as Float32Array;

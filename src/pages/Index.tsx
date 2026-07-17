@@ -4,6 +4,8 @@ import { HumanoidMesh } from '@/components/HumanoidMesh';
 import { VideoPlayer } from '@/components/VideoPlayer';
 import { UIOverlay } from '@/components/UIOverlay';
 import { MedullartWorld } from '@/components/MedullartWorld';
+import { CursorHalo } from '@/components/CursorHalo';
+import { ArtworksGallery } from '@/components/ArtworksGallery';
 import { useKeyboardInput } from '@/hooks/useKeyboardInput';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useFileAudioAnalyzer } from '@/hooks/useFileAudioAnalyzer';
@@ -61,6 +63,8 @@ export default function Index() {
   const { playSpringSound, playEnterSound } = useClickSound();
   const [enterPressed, setEnterPressed] = useState(false);
   const [worldViewOpen, setWorldViewOpen] = useState(false);
+  const [artworksOpen, setArtworksOpen] = useState(false);
+  const [artworksHovered, setArtworksHovered] = useState(false);
 
   // Handle filament drag to open world view
   const handleFilamentDrag = useCallback(() => {
@@ -154,17 +158,21 @@ export default function Index() {
     triggerEnter();
   }, [playEnterSound, triggerEnter]);
 
-  // Handle ESC to go back to idle
+  // Handle ESC to go back to idle or close artworks
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && systemMode === 'render') {
-        stopFile();
-        setSystemMode('idle');
+      if (e.key === 'Escape') {
+        if (artworksOpen) {
+          setArtworksOpen(false);
+        } else if (systemMode === 'render') {
+          stopFile();
+          setSystemMode('idle');
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [systemMode, stopFile]);
+  }, [systemMode, stopFile, artworksOpen]);
 
   const handleMicToggle = useCallback(() => {
     if (micActive) {
@@ -208,6 +216,8 @@ export default function Index() {
 
   return (
     <div data-ev-id="ev_d5c75d0445" className="fixed inset-0 bg-void overflow-hidden cursor-none select-none">
+      {/* Global Cursor Halo */}
+      <CursorHalo />
       {/* Background - always show filament for visual continuity */}
       <div data-ev-id="ev_a1ce27c7a8" className={`transition-opacity duration-500 ${systemMode === 'render' ? 'opacity-20' : 'opacity-100'}`}>
         <FilamentCanvas
@@ -267,10 +277,41 @@ export default function Index() {
       </div>
 
       {/* Medullart World Map - opens when filament is dragged */}
-      <MedullartWorld 
-        isOpen={worldViewOpen} 
-        onClose={() => setWorldViewOpen(false)} 
-      />
+      <MedullartWorld
+        isOpen={worldViewOpen}
+        onClose={() => setWorldViewOpen(false)} />
+
+
+      {/* ARTWORKS trigger - hidden at top center */}
+      {systemMode === 'idle' && !worldViewOpen &&
+      <div data-ev-id="ev_f5650f73c8"
+      className="fixed top-8 left-1/2 -translate-x-1/2 z-20"
+      onMouseEnter={() => setArtworksHovered(true)}
+      onMouseLeave={() => setArtworksHovered(false)}
+      onClick={() => setArtworksOpen(true)}>
+
+          <span data-ev-id="ev_2fc0dfed13"
+        className={`font-mono text-[11px] tracking-[0.5em] cursor-pointer transition-all duration-500 ${
+        artworksHovered ?
+        'text-white opacity-100' :
+        'text-white/0 opacity-0'}`
+        }
+        style={{
+          textShadow: artworksHovered ?
+          '0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc' :
+          'none'
+        }}>
+
+            ARTWORKS
+          </span>
+        </div>
+      }
+
+      {/* Artworks Gallery Overlay */}
+      <ArtworksGallery
+        isOpen={artworksOpen}
+        onClose={() => setArtworksOpen(false)} />
+
     </div>);
 
 }

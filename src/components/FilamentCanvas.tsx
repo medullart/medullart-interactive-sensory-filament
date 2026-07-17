@@ -467,12 +467,23 @@ export function FilamentCanvas({
             }
           }
 
-          let x = Math.sin(t + time * speedFactor) * (0.3 + localCurvature * 0.2) + charOffsetX + horizontalPos * 0.3;
-          let y = verticalPos + Math.sin(t * 2 + time * speedFactor * 0.7) * (0.2 + bass * 0.5) + charOffsetY;
-          let z = Math.cos(t * 3 + time * speedFactor * 0.5) * 0.3 + charOffsetZ;
+          // Mouse Y controls amplitude, Mouse X controls frequency/distortion
+          const mouseYNorm = (mousePosition.y / window.innerHeight - 0.5);
+          const mouseXNorm = (mousePosition.x / window.innerWidth - 0.5);
+          const amplitudeMod = 1 + mouseYNorm * 1.5; // Y affects amplitude
+          const freqMod = 1 + mouseXNorm * 2.0; // X affects frequency/distortion
+          
+          let x = Math.sin(t * freqMod + time * speedFactor * freqMod) * (0.3 + localCurvature * 0.2) * amplitudeMod + charOffsetX + horizontalPos * 0.3;
+          let y = verticalPos + Math.sin(t * 2 * freqMod + time * speedFactor * 0.7) * (0.2 + bass * 0.5) * amplitudeMod + charOffsetY;
+          let z = Math.cos(t * 3 * freqMod + time * speedFactor * 0.5) * 0.3 * amplitudeMod + charOffsetZ;
 
+          // Additional mouse influence for physical feel
           x += mouseX * (1 - Math.abs(verticalPos) / 2) * 0.5;
           y += mouseY * 0.3;
+          
+          // Mouse-driven wave distortion
+          x += Math.sin(verticalPos * (2 + mouseXNorm * 3) + time * (1 + Math.abs(mouseXNorm))) * mouseXNorm * 0.4;
+          y += Math.cos(verticalPos * (1.5 + mouseXNorm * 2)) * mouseYNorm * 0.3;
 
           // Click vibration
           if (vibration > 0.01) {
