@@ -470,27 +470,27 @@ export function FilamentCanvas({
           // Mouse Y controls amplitude, Mouse X controls frequency/distortion
           const mouseYNorm = (mousePosition.y / window.innerHeight - 0.5);
           const mouseXNorm = (mousePosition.x / window.innerWidth - 0.5);
-          const amplitudeMod = 1 + mouseYNorm * 1.5; // Y affects amplitude
-          const freqMod = 1 + mouseXNorm * 2.0; // X affects frequency/distortion
+          const amplitudeMod = 1 + mouseYNorm * 0.8; // Y affects amplitude (smoother)
+          const freqMod = 1 + mouseXNorm * 0.6; // X affects frequency (gentler)
           
-          let x = Math.sin(t * freqMod + time * speedFactor * freqMod) * (0.3 + localCurvature * 0.2) * amplitudeMod + charOffsetX + horizontalPos * 0.3;
-          let y = verticalPos + Math.sin(t * 2 * freqMod + time * speedFactor * 0.7) * (0.2 + bass * 0.5) * amplitudeMod + charOffsetY;
-          let z = Math.cos(t * 3 * freqMod + time * speedFactor * 0.5) * 0.3 * amplitudeMod + charOffsetZ;
+          let x = Math.sin(t * freqMod + time * speedFactor * 0.3) * (0.25 + localCurvature * 0.15) * amplitudeMod + charOffsetX + horizontalPos * 0.3;
+          let y = verticalPos + Math.sin(t * 2 * freqMod + time * speedFactor * 0.2) * (0.15 + bass * 0.3) * amplitudeMod + charOffsetY;
+          let z = Math.cos(t * 3 * freqMod + time * speedFactor * 0.15) * 0.2 * amplitudeMod + charOffsetZ;
 
-          // Additional mouse influence for physical feel
-          x += mouseX * (1 - Math.abs(verticalPos) / 2) * 0.5;
-          y += mouseY * 0.3;
+          // Smooth mouse influence - responsive but not jittery
+          x += mouseX * (1 - Math.abs(verticalPos) / 3) * 0.6;
+          y += mouseY * 0.4;
           
-          // Mouse-driven wave distortion
-          x += Math.sin(verticalPos * (2 + mouseXNorm * 3) + time * (1 + Math.abs(mouseXNorm))) * mouseXNorm * 0.4;
-          y += Math.cos(verticalPos * (1.5 + mouseXNorm * 2)) * mouseYNorm * 0.3;
+          // Subtle wave following mouse position (no trembling)
+          const smoothWave = Math.sin(verticalPos * 1.5 + time * 0.3) * mouseXNorm * 0.15;
+          x += smoothWave;
 
-          // Click vibration
+          // Click vibration - subtle
           if (vibration > 0.01) {
-            const vibFreq = 25;
-            x += Math.sin(time * vibFreq + i * 0.5) * vibration * 0.3;
-            y += Math.cos(time * vibFreq * 1.3 + i * 0.3) * vibration * 0.2;
-            z += Math.sin(time * vibFreq * 0.8 + i * 0.4) * vibration * 0.15;
+            const vibFreq = 20;
+            x += Math.sin(time * vibFreq + i * 0.3) * vibration * 0.15;
+            y += Math.cos(time * vibFreq * 1.2 + i * 0.2) * vibration * 0.1;
+            z += Math.sin(time * vibFreq * 0.7 + i * 0.25) * vibration * 0.08;
           }
 
           // Enter vibration

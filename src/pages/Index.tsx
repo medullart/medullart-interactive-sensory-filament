@@ -65,6 +65,34 @@ export default function Index() {
   const [worldViewOpen, setWorldViewOpen] = useState(false);
   const [artworksOpen, setArtworksOpen] = useState(false);
   const [artworksHovered, setArtworksHovered] = useState(false);
+  const touchStartYRef = useRef(0);
+
+  // Handle swipe up on mobile to show ARTWORKS
+  useEffect(() => {
+    if (systemMode !== 'idle' || worldViewOpen) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartYRef.current = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchStartYRef.current - touchEndY;
+
+      // Swipe up detected (at least 80px)
+      if (deltaY > 80 && touchStartYRef.current > window.innerHeight * 0.5) {
+        setArtworksOpen(true);
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [systemMode, worldViewOpen]);
 
   // Handle filament drag to open world view
   const handleFilamentDrag = useCallback(() => {
@@ -282,29 +310,47 @@ export default function Index() {
         onClose={() => setWorldViewOpen(false)} />
 
 
-      {/* ARTWORKS trigger - hidden at top center */}
+      {/* ARTWORKS trigger - larger hover zone at top center */}
       {systemMode === 'idle' && !worldViewOpen &&
-      <div data-ev-id="ev_f5650f73c8"
-      className="fixed top-8 left-1/2 -translate-x-1/2 z-20"
-      onMouseEnter={() => setArtworksHovered(true)}
-      onMouseLeave={() => setArtworksHovered(false)}
-      onClick={() => setArtworksOpen(true)}>
+      <>
+        {/* Desktop: hover zone */}
+        <div data-ev-id="ev_f5650f73c8"
+        className="fixed top-0 left-1/2 -translate-x-1/2 z-20 px-24 py-16 cursor-pointer hidden md:block"
+        onMouseEnter={() => setArtworksHovered(true)}
+        onMouseLeave={() => setArtworksHovered(false)}
+        onClick={() => setArtworksOpen(true)}>
 
-          <span data-ev-id="ev_2fc0dfed13"
-        className={`font-mono text-[11px] tracking-[0.5em] cursor-pointer transition-all duration-500 ${
-        artworksHovered ?
-        'text-white opacity-100' :
-        'text-white/0 opacity-0'}`
-        }
-        style={{
-          textShadow: artworksHovered ?
-          '0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc' :
-          'none'
-        }}>
+            <span data-ev-id="ev_2fc0dfed13"
+          className={`font-mono text-[11px] tracking-[0.5em] transition-all duration-500 ${
+          artworksHovered ?
+          'text-white opacity-100' :
+          'text-white/0 opacity-0'}`
+          }
+          style={{
+            textShadow: artworksHovered ?
+            '0 0 20px #00ffcc, 0 0 40px #00ffcc, 0 0 60px #00ffcc' :
+            'none'
+          }}>
 
-            ARTWORKS
-          </span>
+              ARTWORKS
+            </span>
+          </div>
+        
+        {/* Mobile: swipe hint at top */}
+        <div data-ev-id="ev_e0d4df7365"
+        className="fixed top-4 left-1/2 -translate-x-1/2 z-20 md:hidden"
+        onClick={() => setArtworksOpen(true)}>
+
+          <div data-ev-id="ev_065987951c" className="flex flex-col items-center gap-1">
+            <span data-ev-id="ev_b6533f5189" className="font-mono text-[8px] text-white/30 tracking-[0.3em] animate-pulse">
+              ↑ SWIPE UP
+            </span>
+            <span data-ev-id="ev_6361d69e46" className="font-mono text-[10px] text-white/50 tracking-[0.4em]">
+              ARTWORKS
+            </span>
+          </div>
         </div>
+      </>
       }
 
       {/* Artworks Gallery Overlay */}

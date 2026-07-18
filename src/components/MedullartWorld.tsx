@@ -12,65 +12,65 @@ interface WorldSection {
 const WORLD_DATA: WorldSection[] = [
 {
   id: 'genesis',
-  title: 'I. GÉNESIS COSMOGÓNICA',
-  subtitle: 'Maquinaria de Extent',
-  content: `DEKANAR — Gobernante de la Metrópolis. Proyecta pureza asexual absoluta mientras reprime su deseo homosexual. Progenitor gestacional de The Child mediante mutación de thelines.\n\nTHE CHILD — Espécimen posthumano de inmovilidad perpetua. Núcleo biológico que procesa y estabiliza la homeostasis de Extent. Pureza formal + aura fétida.\n\nDSYDIANNA — Consorte de Dekanar. Femme fatale cuántica que digitaliza la esencia "máquina" de jóvenes sacrificados.\n\nDOBLE L (LL) — Divinidad asexual oculta, receptora del tributo de hombres-máquina.\n\nEL PERMANENTE — El Dios de Líneas. Creador absoluto del multiverso.`,
+  title: 'I. COSMOGONIC GENESIS',
+  subtitle: 'Extent Machinery',
+  content: `DEKANAR — Pure homogeneity. A binary entity structured under the strict logic of alternation and elemental polarity. In primordial eras, it inhabited an unknown heterogeneous source intrinsically incompatible with its own homogeneous and unified essence. Faced with this ontological contradiction, it executed an existential escape from that meta-virtual matrix to establish itself as the absolute regent and orderer of the Metropolis.\n\nTHE CHILD — A secret enchantment. The strange fright of seeing a robot moving when you've already turned it off. It is the fragility and heart of Extent. If The Child is destroyed, Extent is too. When happy, Extent regenerates or even upgrades. That's why "toys" must be created.\n\nDSYDIANNA — Systematically explores deep distortion in the femme fatale archetype. Operating as a sophisticated quantum entity within the Metropolis, she executes seduction and capture of meticulously selected young men. Dsydianna irreversibly digitalizes their "machine" essence—subjects who surrender to biological cessation through voluntary sacrifice. These mechanized consciousnesses are processed and offered as tribute to her consort Dekanar, consolidating the technological patriarchy governing the network.\n\nTHE PERMANENT — The God of Lines. Unknown, but creator of everything.`,
   angle: -Math.PI / 2, // Top
   distance: 0.35
 },
 {
   id: 'regulacion',
-  title: 'II. REGULACIÓN INMUNOLÓGICA',
-  subtitle: 'Aethel vs. Red Sutil',
-  content: `AETHEL — País soberano donde se asienta la Metrópolis. La materia se compone de thelines (código legible).\n\nAPP CÓSMICA XTNT — Software rector de la realidad. Administra homeostasis preventiva.\n\nNTRConfig — Complejo de control bioquímico. Desactiva melancolía, angustia y obsesión.\n\nECUACIÓN T_f — Tensión de Enlace:\nT_f = Σ(n=1→12) ψn · e^(iθn)\n\nRESONANCIA SIMPÁTICA — Acoplamiento crítico cuando filamentos coinciden en fase angular.`,
+  title: 'II. IMMUNOLOGICAL REGULATION',
+  subtitle: 'Aethel vs. Subtle Network',
+  content: `AETHEL — Sovereign country where the Metropolis is settled. Matter is composed of thelines (readable code).\n\nCOSMIC APP XTNT — Software governing reality. Manages preventive homeostasis.\n\nNTRConfig — Biochemical control complex. Deactivates melancholy, anguish, and obsession.\n\nEQUATION T_f — Bond Tension:\nT_f = Σ(n=1→12) ψn · e^(iθn)\n\nSYMPATHETIC RESONANCE — Critical coupling when filaments coincide in angular phase.`,
   angle: -Math.PI / 4, // Top-right
   distance: 0.38
 },
 {
   id: 'esferas',
-  title: 'IV. ESFERAS DE MITHRA',
-  subtitle: 'VIII Portales de Disolución',
-  content: `ESFERA I — El Espejo de Identidad. Rechazar simulación.\n\nESFERA II — Disolución Ósea / Lago Negro. Estructuras óseas limpias.\n\nESFERA III — Acoplamiento de Fase. 12 filamentos lumbares.\n\nESFERA IV — Vacío del Filtro. Fuego asémico.\n\nESFERA V — Geometría de Tensegridad.\n\nESFERA VI — Linfa de Thielf.\n\nESFERA VII — Acoplamiento con Antartekne.\n\nESFERA VIII — Unificación con El Permanente.`,
+  title: 'IV. SPHERES OF MITHRA',
+  subtitle: 'VIII Dissolution Portals',
+  content: `SPHERE I — The Mirror of Identity. Reject simulation.\n\nSPHERE II — Bone Dissolution / Black Lake. Clean bone structures.\n\nSPHERE III — Phase Coupling. 12 lumbar filaments.\n\nSPHERE IV — Filter Void. Asemic fire.\n\nSPHERE V — Tensegrity Geometry.\n\nSPHERE VI — Thielf Lymph.\n\nSPHERE VII — Coupling with Antartekne.\n\nSPHERE VIII — Unification with The Permanent.`,
   angle: Math.PI / 6, // Right
   distance: 0.4
 },
 {
   id: 'personajes',
-  title: 'III. COMPENDIO DE ACTORES',
-  subtitle: 'Catalizadores y Viajeros',
-  content: `CATALIZADORES:\n• Antartekne/Vishnakarma — Deidad de oro líquido creador.\n• Pterophos — Guía holográfico con alas de luz.\n• Stella — Diseñadora química de Llima.\n• Cole — Creador de la Cola de Araña.\n\nVIAJEROS:\n• Regxen — Exmodelo, psicopompo del grupo.\n• Nirev — Asexual de SUPERBIO.\n• Atlas — Introvertido atlético.\n• Redsea — Ex-vampiresa purificada.\n• Hyun — Místico silencioso.`,
+  title: 'III. ACTORS COMPENDIUM',
+  subtitle: 'Catalysts and Travelers',
+  content: `CATALYSTS:\n• Antartekne/Vishnakarma — Creator liquid gold deity.\n• Pterophos — Holographic guide with wings of light.\n• Stella — Chemical designer of Llima.\n• Cole — Creator of the Spider's Tail.\n\nTRAVELERS:\n• Regxen — Ex-model, group psychopomp.\n• Nirev — Asexual from SUPERBIO.\n• Atlas — Athletic introvert.\n• Redsea — Purified ex-vampiress.\n• Hyun — Silent mystic.`,
   angle: Math.PI / 2 + 0.3, // Bottom-right
   distance: 0.36
 },
 {
   id: 'infraestructura',
-  title: 'V. TAXONOMÍA',
-  subtitle: 'Anomalías Metropolitanas',
-  content: `SUPERBIO:\n├─ División de Hibridación Mitológica\n├─ Laboratorios de Deconstrucción Sexual\n└─ Sección de Simulación de Conciencia Plana\n\nUTHINY — Metaagencia de Biotecnología Textil.\n\nANOMALÍAS:\n• Sistema Raquídea — Mente Madre.\n• Teknonia — Amplificación militar Y2K.\n• Green Ntrance — Aduana vegetal sintética.\n• Singularidad de Alex — Virus algorítmico.\n• Cola de Araña — Serpiente de código sutil.`,
+  title: 'V. TAXONOMY',
+  subtitle: 'Metropolitan Anomalies',
+  content: `SUPERBIO:\n├─ Mythological Hybridization Division\n├─ Sexual Deconstruction Laboratories\n└─ Flat Consciousness Simulation Section\n\nUTHINY — Textile Biotechnology Meta-agency.\n\nANOMALIES:\n• Spinal System — Mother Mind.\n• Teknonia — Y2K military amplification.\n• Green Ntrance — Synthetic vegetal customs.\n• Alex Singularity — Algorithmic virus.\n• Spider's Tail — Subtle code serpent.`,
   angle: Math.PI / 2 + Math.PI / 3, // Bottom
   distance: 0.38
 },
 {
   id: 'llima',
-  title: 'VI. GEOPOLÍTICA',
-  subtitle: 'Llima & Tráfico Químico',
-  content: `LLIMA — Clúster geográfico autónomo y semidistópico. Ausencia de biología humana.\n\nKIOSKO DE STELLA:\nFachada analógica. Píldoras Diamante.\n\nPÍLDORAS DIAMANTE:\nFármacos que bloquean neurotransmisores de NTRConfig.\n\nFUNCIÓN:\nFacilitar entrada a fases profundas de Medullart.`,
+  title: 'VI. GEOPOLITICS',
+  subtitle: 'Llima & Chemical Traffic',
+  content: `LLIMA — Autonomous and semi-dystopian geographic cluster. Absence of human biology.\n\nSTELLA'S KIOSK:\nAnalog facade. Diamond Pills.\n\nDIAMOND PILLS:\nDrugs that block NTRConfig neurotransmitters.\n\nFUNCTION:\nFacilitate entry into deep phases of Medullart.`,
   angle: Math.PI - 0.4, // Left-bottom
   distance: 0.35
 },
 {
   id: 'laboratorios',
-  title: 'VII. ANATOMÍA LUMBAR',
-  subtitle: 'Laboratorios L1-L4',
-  content: `L1 — EJE QLIPHÓTICO:\n• Cranial Vault — Bóveda custodiada por Engur.\n• Los Vetemmu — Entidades espectrales.\n• Ciclogénesis 1 — Tormentas de obsesión.\n• Nervio Limítrofe — Anti-Venus.\n\nL2 — REACTOR HIPER-ENERGÍA:\n• Silicia — Terreno mineral de cuarzos.\n• Sala de Multiordeñamiento.\n\nL3 — ECOSISTEMA HIBRIDACIÓN:\nAnatomía collage, poliamor estructural.\n\nL4 — ESPACIO BLANCO:\nSilencio absoluto. Reposo pre-salto.`,
+  title: 'VII. LUMBAR ANATOMY',
+  subtitle: 'Laboratories L1-L4',
+  content: `L1 — QLIPHOTIC AXIS:\n• Cranial Vault — Vault guarded by Engur.\n• The Vetemmu — Spectral entities.\n• Cyclogenesis 1 — Storms of obsession.\n• Liminal Nerve — Anti-Venus.\n\nL2 — HYPER-ENERGY REACTOR:\n• Silicia — Mineral terrain of quartz.\n• Multi-milking Room.\n\nL3 — HYBRIDIZATION ECOSYSTEM:\nCollage anatomy, structural polyamory.\n\nL4 — WHITE SPACE:\nAbsolute silence. Pre-jump rest.`,
   angle: Math.PI + 0.3, // Left
   distance: 0.4
 },
 {
   id: 'formula',
-  title: 'ESTADO DE FILAMENTO',
-  subtitle: 'Alterado Operativo (Base 12)',
-  content: `▲ ▼ ▲ VIBRANDO EN RED ▲ ▼ ▲\n\n─○──────○─────○────○───────○──────○─────○────○───────○──────○──\n[N1] [N2] [N3] [N4] [N5] [N6] [N7] [N8] [N9] [N10]\n\n[T_f TIMING RESONANCE ACTIVE]\n[THIELF SYSTEM ALIGNED]\n\nRED DE INDRA — Geometría de filamentos biológicos en tensión continua.\n12 filamentos principales a lo largo de la columna vertebral.`,
+  title: 'FILAMENT STATE',
+  subtitle: 'Altered Operative (Base 12)',
+  content: `▲ ▼ ▲ VIBRATING IN NETWORK ▲ ▼ ▲\n\n─○──────○─────○────○───────○──────○─────○────○───────○──────○──\n[N1] [N2] [N3] [N4] [N5] [N6] [N7] [N8] [N9] [N10]\n\n[T_f TIMING RESONANCE ACTIVE]\n[THIELF SYSTEM ALIGNED]\n\nINDRA'S NET — Geometry of biological filaments in continuous tension.\n12 main filaments along the spinal column.`,
   angle: -Math.PI + 0.8, // Top-left
   distance: 0.37
 }];
