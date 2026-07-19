@@ -9,51 +9,66 @@ interface HumanoidMeshProps {
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
+// Rainbow spiral colors for initial colorful filaments
+const RAINBOW_COLORS = [
+  0xff0066, // Magenta-pink
+  0xff3300, // Red-orange  
+  0xffaa00, // Orange-yellow
+  0x88ff00, // Yellow-green
+  0x00ff88, // Green-cyan
+  0x00aaff, // Cyan-blue
+  0x4400ff, // Blue-violet
+  0x8800ff, // Violet
+  0xff00aa, // Pink-magenta
+];
+
 // Generate random aesthetic parameters
 function generateAesthetic() {
   // Random color palettes - cinematic/diverse variety
   const palettes = [
-    // Monochrome Silver (like reference)
-    { primary: 0xcccccc, secondary: 0x888888, accent: 0xffffff, ambient: 0x101015 },
-    // Cold Steel
-    { primary: 0x99aacc, secondary: 0x667799, accent: 0xddddff, ambient: 0x0a0a12 },
-    // Cyberpunk
-    { primary: 0x00ffff, secondary: 0xff00ff, accent: 0x00ff88, ambient: 0x0a1020 },
+    // Rainbow Spiral (primary style)
+    { primary: 0xff0088, secondary: 0x00ffaa, accent: 0xffaa00, ambient: 0x050508, style: 'rainbow' },
+    // Monochrome Silver
+    { primary: 0xcccccc, secondary: 0x888888, accent: 0xffffff, ambient: 0x080810, style: 'mono' },
+    // Cyberpunk Neon
+    { primary: 0x00ffff, secondary: 0xff00ff, accent: 0x00ff88, ambient: 0x050510, style: 'neon' },
     // Deep Purple
-    { primary: 0x8844ff, secondary: 0xff44aa, accent: 0xaa88ff, ambient: 0x0a0815 },
+    { primary: 0x8844ff, secondary: 0xff44aa, accent: 0xaa88ff, ambient: 0x050408, style: 'purple' },
     // Ocean Depths
-    { primary: 0x0066cc, secondary: 0x00aaff, accent: 0x003388, ambient: 0x050a15 },
-    // Neon Red
-    { primary: 0xff0044, secondary: 0xff4466, accent: 0xcc0033, ambient: 0x100508 },
-    // Arctic Blue
-    { primary: 0x66aaff, secondary: 0xaaddff, accent: 0x4488cc, ambient: 0x080a12 },
-    // Volcanic
-    { primary: 0xff4400, secondary: 0xff6622, accent: 0xffaa00, ambient: 0x100505 },
-    // Emerald
-    { primary: 0x00cc66, secondary: 0x22ff88, accent: 0x00aa44, ambient: 0x050a08 },
-    // Gold Chrome
-    { primary: 0xccaa44, secondary: 0xffcc66, accent: 0xaa8822, ambient: 0x0a0805 },
-    // Electric Blue
-    { primary: 0x0088ff, secondary: 0x44aaff, accent: 0x0066cc, ambient: 0x050810 },
-    // Plasma Pink
-    { primary: 0xff44aa, secondary: 0xff66cc, accent: 0xcc2288, ambient: 0x100510 },
-    // Ghost White
-    { primary: 0xeeeeff, secondary: 0xaabbcc, accent: 0xffffff, ambient: 0x080810 },
-    // Infrared
-    { primary: 0xff2222, secondary: 0xcc0000, accent: 0xff4444, ambient: 0x100505 },
+    { primary: 0x0066cc, secondary: 0x00aaff, accent: 0x003388, ambient: 0x030508, style: 'ocean' },
+    // Plasma Fire
+    { primary: 0xff4400, secondary: 0xff0066, accent: 0xffaa00, ambient: 0x080303, style: 'fire' },
+    // Arctic Glow
+    { primary: 0x66aaff, secondary: 0xaaddff, accent: 0x4488cc, ambient: 0x040608, style: 'arctic' },
+    // Emerald Dreams
+    { primary: 0x00cc66, secondary: 0x22ff88, accent: 0x00aa44, ambient: 0x030504, style: 'emerald' },
   ];
 
   const palette = palettes[Math.floor(Math.random() * palettes.length)];
   
-  // Generate filament colors from palette with more variation
-  const filamentColors = [
-    new THREE.Color(palette.primary),
-    new THREE.Color(palette.secondary),
-    new THREE.Color(palette.accent),
-    new THREE.Color(palette.primary).lerp(new THREE.Color(palette.secondary), 0.3 + Math.random() * 0.4),
-    new THREE.Color(palette.secondary).lerp(new THREE.Color(palette.accent), 0.3 + Math.random() * 0.4),
-    new THREE.Color(palette.accent).lerp(new THREE.Color(palette.primary), 0.3 + Math.random() * 0.4),
-  ];
+  // Generate filament colors - rainbow gradient for 'rainbow' style, otherwise from palette
+  let filamentColors: THREE.Color[];
+  
+  if ((palette as { style?: string }).style === 'rainbow' || Math.random() < 0.4) {
+    // Rainbow spiral colors with variations
+    filamentColors = RAINBOW_COLORS.map(c => {
+      const color = new THREE.Color(c);
+      // Slight random variation
+      color.r = Math.min(1, color.r + (Math.random() - 0.5) * 0.15);
+      color.g = Math.min(1, color.g + (Math.random() - 0.5) * 0.15);
+      color.b = Math.min(1, color.b + (Math.random() - 0.5) * 0.15);
+      return color;
+    });
+  } else {
+    filamentColors = [
+      new THREE.Color(palette.primary),
+      new THREE.Color(palette.secondary),
+      new THREE.Color(palette.accent),
+      new THREE.Color(palette.primary).lerp(new THREE.Color(palette.secondary), 0.3 + Math.random() * 0.4),
+      new THREE.Color(palette.secondary).lerp(new THREE.Color(palette.accent), 0.3 + Math.random() * 0.4),
+      new THREE.Color(palette.accent).lerp(new THREE.Color(palette.primary), 0.3 + Math.random() * 0.4),
+    ];
+  }
 
   // More diverse head shape variations
   const headStyles = [
@@ -199,36 +214,41 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
       onCanvasReady(renderer.domElement);
     }
 
-    // === CINEMATIC DARK LIGHTING ===
+    // === CINEMATIC DARK LIGHTING - Starts dark, illuminates on audio ===
     lightsRef.current = [];
 
-    // Very subtle ambient - almost black
-    const ambientLight = new THREE.AmbientLight(0x050508, 0.2);
+    // Very subtle ambient - starts almost black
+    const ambientLight = new THREE.AmbientLight(0x030305, 0.15);
     scene.add(ambientLight);
     lightsRef.current.push(ambientLight);
 
     // Main key light - soft white from front-right (cinematic)
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.6);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.5);
     keyLight.position.set(3, 2, 4);
     scene.add(keyLight);
     lightsRef.current.push(keyLight);
 
-    // Soft rim light from back-left with palette color tint
-    const rimLeft = new THREE.SpotLight(new THREE.Color(aesthetic.palette.primary).multiplyScalar(0.5), 1.5, 20, Math.PI / 3, 0.8);
+    // Colorful rim lights for rainbow filament illumination
+    const rimLeft = new THREE.SpotLight(new THREE.Color(aesthetic.filamentColors[0] || 0xff0088), 1.2, 20, Math.PI / 3, 0.8);
     rimLeft.position.set(-5, 1, -3);
     rimLeft.lookAt(0, 0, 0);
     scene.add(rimLeft);
     lightsRef.current.push(rimLeft);
 
-    // Soft rim light from back-right with secondary color
-    const rimRight = new THREE.SpotLight(new THREE.Color(aesthetic.palette.secondary).multiplyScalar(0.4), 1.2, 20, Math.PI / 3, 0.8);
+    const rimRight = new THREE.SpotLight(new THREE.Color(aesthetic.filamentColors[3] || 0x00ffaa), 1.0, 20, Math.PI / 3, 0.8);
     rimRight.position.set(5, -1, -3);
     rimRight.lookAt(0, 0, 0);
     scene.add(rimRight);
     lightsRef.current.push(rimRight);
+    
+    // Additional color accent light from below
+    const bottomLight = new THREE.PointLight(new THREE.Color(aesthetic.filamentColors[5] || 0xffaa00), 0.6, 15);
+    bottomLight.position.set(0, -4, 2);
+    scene.add(bottomLight);
+    lightsRef.current.push(bottomLight);
 
     // Subtle top light for depth
-    const topLight = new THREE.DirectionalLight(0xaaaacc, 0.3);
+    const topLight = new THREE.DirectionalLight(0x8888aa, 0.25);
     topLight.position.set(0, 6, 2);
     scene.add(topLight);
     lightsRef.current.push(topLight);
@@ -522,24 +542,63 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
       const colorIndex = Math.floor(Math.random() * aesthetic.filamentColors.length);
       const color = aesthetic.filamentColors[colorIndex];
 
-      // VERTICAL solid rubber filament - extends beyond screen
+      // SPIRAL/WAVY filament - creates organic curved patterns like reference
+      const filamentStyle = Math.random();
       const x = (Math.random() - 0.5) * 3.5;
-      const startY = 6 + Math.random() * 1; // Extended beyond screen top
-      const endY = -6 - Math.random() * 1;  // Extended beyond screen bottom
+      const startY = 6 + Math.random() * 1;
+      const endY = -6 - Math.random() * 1;
       const z = 0.2 + Math.random() * 1.5;
-
-      const points = [
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, startY, z),
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.4, startY * 0.5, z + 0.2),
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.35, startY * 0.2, z + 0.3),
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, 0, z + 0.35),
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.35, endY * 0.2, z + 0.3),
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.4, endY * 0.5, z + 0.2),
-        new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, endY, z),
-      ];
+      
+      let points: THREE.Vector3[];
+      
+      if (filamentStyle < 0.35) {
+        // SPIRAL pattern - like the rainbow spiral reference
+        const spiralRadius = 0.3 + Math.random() * 0.4;
+        const spiralTurns = 2 + Math.random() * 3;
+        const spiralPoints = 12;
+        points = [];
+        for (let i = 0; i < spiralPoints; i++) {
+          const t = i / (spiralPoints - 1);
+          const y = startY + (endY - startY) * t;
+          const angle = t * Math.PI * 2 * spiralTurns;
+          const r = spiralRadius * (0.5 + Math.sin(t * Math.PI) * 0.5);
+          points.push(new THREE.Vector3(
+            x + Math.cos(angle) * r,
+            y,
+            z + Math.sin(angle) * r * 0.5
+          ));
+        }
+      } else if (filamentStyle < 0.65) {
+        // WAVE pattern - oscillating curves
+        const waveAmplitude = 0.2 + Math.random() * 0.3;
+        const waveFreq = 3 + Math.random() * 4;
+        const wavePoints = 10;
+        points = [];
+        for (let i = 0; i < wavePoints; i++) {
+          const t = i / (wavePoints - 1);
+          const y = startY + (endY - startY) * t;
+          const wave = Math.sin(t * Math.PI * waveFreq) * waveAmplitude;
+          points.push(new THREE.Vector3(
+            x + wave,
+            y,
+            z + Math.cos(t * Math.PI * waveFreq * 0.7) * waveAmplitude * 0.3
+          ));
+        }
+      } else {
+        // ORGANIC curve - gentle S-curves
+        points = [
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, startY, z),
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.5, startY * 0.5, z + 0.2),
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.4, startY * 0.2, z + 0.3),
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.35, 0, z + 0.35),
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.4, endY * 0.2, z + 0.3),
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.5, endY * 0.5, z + 0.2),
+          new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, endY, z),
+        ];
+      }
 
       const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
-      const thickness = 0.022 + Math.random() * 0.018;
+      const thickness = 0.018 + Math.random() * 0.022;
       const geometry = new THREE.TubeGeometry(curve, 80, thickness, 20, false);
 
       // LATEX/PLASTIC material - glossy, reflective, cinematic
@@ -638,6 +697,14 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
 
       if (faceGroupRef.current && filamentsGroupRef.current && sceneRef.current && cameraRef.current && rendererRef.current) {
         const { bass, treble, volume, mid } = audioData;
+        
+        // === DYNAMIC BACKGROUND ILLUMINATION ===
+        // Background pulses from pure black to subtle illumination on beats
+        const bgIntensity = Math.min(0.08, bass * 0.05 + treble * 0.03);
+        const r = bgIntensity * 0.4;
+        const g = bgIntensity * 0.3;
+        const b = bgIntensity * 0.6;
+        sceneRef.current.background = new THREE.Color(r, g, b);
 
         // === SNARE/ACCENT DETECTION ===
         // Snare hits have strong mid-high frequencies with sudden transients

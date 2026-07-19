@@ -200,29 +200,29 @@ export function FilamentCanvas({
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // === LIGHTING for 3D mode - subtle and realistic ===
-    const ambientLight = new THREE.AmbientLight(0x151520, 0.4);
+    // === LIGHTING for 3D mode - subtle, tenue and realistic ===
+    const ambientLight = new THREE.AmbientLight(0x0a0a12, 0.25);
     scene.add(ambientLight);
 
-    const frontLight = new THREE.DirectionalLight(0xeeeeff, 0.5);
+    const frontLight = new THREE.DirectionalLight(0xccccdd, 0.3);
     frontLight.position.set(0, 0, 5);
     scene.add(frontLight);
 
-    const blueRimLight = new THREE.PointLight(0x00aacc, 0.8, 12);
-    blueRimLight.position.set(-3, 1, 2);
+    const blueRimLight = new THREE.PointLight(0x3366aa, 0.4, 10);
+    blueRimLight.position.set(-2, 0.5, 1.5);
     scene.add(blueRimLight);
 
-    const magentaRimLight = new THREE.PointLight(0xcc0088, 0.6, 12);
-    magentaRimLight.position.set(3, -1, 2);
-    scene.add(magentaRimLight);
+    const subtleRimLight = new THREE.PointLight(0x444455, 0.3, 10);
+    subtleRimLight.position.set(2, -0.5, 1.5);
+    scene.add(subtleRimLight);
 
-    const topLight = new THREE.DirectionalLight(0x3366aa, 0.4);
-    topLight.position.set(0, 5, 3);
+    const topLight = new THREE.DirectionalLight(0x222233, 0.2);
+    topLight.position.set(0, 4, 2);
     scene.add(topLight);
 
-    // Subtle back rim for depth
-    const backRimLight = new THREE.PointLight(0x222244, 0.5, 8);
-    backRimLight.position.set(0, 0, -3);
+    // Very subtle back rim for depth
+    const backRimLight = new THREE.PointLight(0x111122, 0.2, 6);
+    backRimLight.position.set(0, 0, -2);
     scene.add(backRimLight);
 
     // === LINE FILAMENT (2D mode) ===
@@ -239,19 +239,19 @@ export function FilamentCanvas({
     scene.add(filamentLine);
     filamentLineRef.current = filamentLine;
 
-    // === TUBE MATERIAL (3D mode - subtle rubber/latex look) ===
+    // === TUBE MATERIAL (3D mode - subtle, tenue rubber/latex look) ===
     const tubeMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xccccdd,
-      metalness: 0.15,
-      roughness: 0.35,
-      clearcoat: 0.7,
-      clearcoatRoughness: 0.2,
-      reflectivity: 0.4,
-      sheen: 0.5,
-      sheenRoughness: 0.3,
-      sheenColor: new THREE.Color(0x444466),
-      emissive: 0x111122,
-      emissiveIntensity: 0.15,
+      color: 0x888899,
+      metalness: 0.08,
+      roughness: 0.45,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.3,
+      reflectivity: 0.25,
+      sheen: 0.3,
+      sheenRoughness: 0.4,
+      sheenColor: new THREE.Color(0x333344),
+      emissive: 0x080810,
+      emissiveIntensity: 0.08,
       transparent: true,
       opacity: 1
     });
