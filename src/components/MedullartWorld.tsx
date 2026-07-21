@@ -151,24 +151,24 @@ export function MedullartWorld({ isOpen, onClose }: MedullartWorldProps) {
 
     switch (section.hoverColor) {
       case 'yellow':
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
-        gradient.addColorStop(0.5, 'rgba(255, 255, 200, 0.8)');
-        gradient.addColorStop(1, 'rgba(255, 250, 180, 0.9)');
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 150, 1)');
+        gradient.addColorStop(1, 'rgba(255, 250, 100, 1)');
         break;
       case 'red':
-        gradient.addColorStop(0, 'rgba(255, 100, 100, 0.3)');
-        gradient.addColorStop(0.5, 'rgba(200, 50, 50, 0.7)');
-        gradient.addColorStop(1, 'rgba(180, 30, 30, 0.8)');
+        gradient.addColorStop(0, 'rgba(255, 120, 120, 0.5)');
+        gradient.addColorStop(0.5, 'rgba(255, 50, 50, 1)');
+        gradient.addColorStop(1, 'rgba(220, 30, 30, 1)');
         break;
       case 'white':
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
-        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.9)');
-        gradient.addColorStop(1, 'rgba(240, 245, 255, 1)');
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 1)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
         break;
       case 'pink':
-        gradient.addColorStop(0, 'rgba(255, 150, 200, 0.4)');
-        gradient.addColorStop(0.5, 'rgba(255, 200, 150, 0.7)');
-        gradient.addColorStop(1, 'rgba(255, 180, 220, 0.9)');
+        gradient.addColorStop(0, 'rgba(255, 150, 200, 0.6)');
+        gradient.addColorStop(0.5, 'rgba(255, 200, 100, 1)');
+        gradient.addColorStop(1, 'rgba(255, 150, 220, 1)');
         break;
       default: {
         // Default grayscale gradient
@@ -191,14 +191,14 @@ export function MedullartWorld({ isOpen, onClose }: MedullartWorldProps) {
     return gradient;
   };
 
-  // Get node glow color based on section
+  // Get node glow color based on section - BRIGHTER
   const getNodeColor = (section: WorldSection, isHovered: boolean) => {
-    if (!isHovered) return 'rgba(150, 150, 150, 0.4)';
+    if (!isHovered) return 'rgba(150, 150, 150, 0.5)';
 
     switch (section.hoverColor) {
-      case 'yellow':return 'rgba(255, 250, 200, 0.95)';
-      case 'red':return 'rgba(255, 80, 80, 0.9)';
-      case 'white':return 'rgba(255, 255, 255, 1)';
+      case 'yellow': return 'rgba(255, 255, 150, 1)';
+      case 'red': return 'rgba(255, 60, 60, 1)';
+      case 'white': return 'rgba(255, 255, 255, 1)';
       case 'pink':return 'rgba(255, 180, 200, 0.95)';
       default:return 'rgba(255, 255, 255, 0.9)';
     }
@@ -263,15 +263,18 @@ export function MedullartWorld({ isOpen, onClose }: MedullartWorldProps) {
         ctx.strokeStyle = getHoverGradient(ctx, section, startX, startY, endX + vibX, endY + vibY);
         ctx.lineWidth = isHovered ? 2 : 1.5;
 
-        // Add glow for hovered sections
+        // Add BRIGHT glow for hovered sections
         if (isHovered && section.hoverColor) {
           switch (section.hoverColor) {
-            case 'yellow':ctx.shadowColor = 'rgba(255, 250, 150, 0.6)';break;
-            case 'red':ctx.shadowColor = 'rgba(255, 50, 50, 0.5)';break;
-            case 'white':ctx.shadowColor = 'rgba(255, 255, 255, 0.7)';break;
-            case 'pink':ctx.shadowColor = 'rgba(255, 150, 200, 0.5)';break;
+            case 'yellow': ctx.shadowColor = 'rgba(255, 255, 100, 0.95)'; break;
+            case 'red': ctx.shadowColor = 'rgba(255, 50, 50, 0.95)'; break;
+            case 'white': ctx.shadowColor = 'rgba(255, 255, 255, 1)'; break;
+            case 'pink': ctx.shadowColor = 'rgba(255, 150, 200, 0.95)'; break;
           }
-          ctx.shadowBlur = 12;
+          ctx.shadowBlur = 30;
+        } else if (isHovered) {
+          ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+          ctx.shadowBlur = 20;
         }
       } else {
         ctx.strokeStyle = 'rgba(80, 70, 90, 0.35)';
@@ -332,7 +335,8 @@ export function MedullartWorld({ isOpen, onClose }: MedullartWorldProps) {
       const endY = centerY + Math.sin(section.angle) * baseRadius * section.distance * 2;
 
       const dist = Math.sqrt(Math.pow(mouseX - endX, 2) + Math.pow(mouseY - endY, 2));
-      if (dist < 45) {
+      // MUCH MORE SENSITIVE - larger hit area
+      if (dist < 80) {
         found = section.id;
       }
     });

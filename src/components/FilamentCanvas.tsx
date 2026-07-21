@@ -388,11 +388,11 @@ export function FilamentCanvas({
     const animate = () => {
       timeRef.current += 0.016;
 
-      // Smoothly interpolate mouse influence
-      const targetMouseX = (mousePosition.x / window.innerWidth - 0.5) * 0.3;
-      const targetMouseY = -(mousePosition.y / window.innerHeight - 0.5) * 0.3;
-      mouseInfluenceRef.current.x += (targetMouseX - mouseInfluenceRef.current.x) * 0.05;
-      mouseInfluenceRef.current.y += (targetMouseY - mouseInfluenceRef.current.y) * 0.05;
+      // Smoothly interpolate mouse influence - MORE SENSITIVE
+      const targetMouseX = (mousePosition.x / window.innerWidth - 0.5) * 0.5;
+      const targetMouseY = -(mousePosition.y / window.innerHeight - 0.5) * 0.5;
+      mouseInfluenceRef.current.x += (targetMouseX - mouseInfluenceRef.current.x) * 0.12;
+      mouseInfluenceRef.current.y += (targetMouseY - mouseInfluenceRef.current.y) * 0.12;
 
       // Decay vibration and typing wave
       vibrationRef.current *= 0.92;
@@ -467,11 +467,11 @@ export function FilamentCanvas({
             }
           }
 
-          // Mouse Y controls amplitude, Mouse X controls frequency/distortion
+          // Mouse Y controls amplitude, Mouse X controls frequency/distortion - MORE SENSITIVE
           const mouseYNorm = (mousePosition.y / window.innerHeight - 0.5);
           const mouseXNorm = (mousePosition.x / window.innerWidth - 0.5);
-          const amplitudeMod = 1 + mouseYNorm * 0.8; // Y affects amplitude (smoother)
-          const freqMod = 1 + mouseXNorm * 0.6; // X affects frequency (gentler)
+          const amplitudeMod = 1 + mouseYNorm * 1.2; // Y affects amplitude (more responsive)
+          const freqMod = 1 + mouseXNorm * 0.9; // X affects frequency (more responsive)
           
           let x = Math.sin(t * freqMod + time * speedFactor * 0.3) * (0.25 + localCurvature * 0.15) * amplitudeMod + charOffsetX + horizontalPos * 0.3;
           let y = verticalPos + Math.sin(t * 2 * freqMod + time * speedFactor * 0.2) * (0.15 + bass * 0.3) * amplitudeMod + charOffsetY;
@@ -556,24 +556,37 @@ export function FilamentCanvas({
         lineMat.opacity = sentiment.type === 'chaos' ? 1 - sentiment.intensity * 0.3 : 1;
         lineMat.transparent = true;
 
-        // Update tube for 3D mode
+        // Update tube for 3D mode with ELECTRIC CURRENT effect
         if (is3D && curvePoints.length >= 3) {
           // Dispose old geometry
           filamentTube.geometry.dispose();
           
           // Create new tube from curve points
           const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.5);
-          const tubeRadius = 0.04 + mode3DIntensity * 0.06;
-          const newTubeGeometry = new THREE.TubeGeometry(curve, 100, tubeRadius, 16, false);
+          const tubeRadius = 0.05 + mode3DIntensity * 0.08;
+          const newTubeGeometry = new THREE.TubeGeometry(curve, 120, tubeRadius, 24, false);
           filamentTube.geometry = newTubeGeometry;
           
-          // Update tube material - subtle 3D look
+          // ELECTRIC CURRENT effect - illuminates based on cursor Y position
+          const cursorYRatio = mousePosition.y / window.innerHeight;
+          const electricPulse = Math.sin(time * 15) * 0.3 + 0.7;
+          const currentIntensity = mode3DIntensity * electricPulse;
+          
+          // Color shifts based on where cursor is (electric current flowing)
+          const electricColor = new THREE.Color();
+          electricColor.setHSL(0.5 + cursorYRatio * 0.15, 0.8, 0.6 + currentIntensity * 0.3);
+          
+          // Update tube material - REALISTIC 3D with electric glow
           const tubeMat = tubeMaterialRef.current;
           if (tubeMat) {
-            tubeMat.color = filamentColor.clone().multiplyScalar(0.85);
-            tubeMat.emissive = filamentColor.clone().multiplyScalar(0.1);
-            tubeMat.emissiveIntensity = 0.1 + mode3DIntensity * 0.15;
-            tubeMat.opacity = mode3DIntensity * 0.95;
+            tubeMat.color = filamentColor.clone().lerp(electricColor, currentIntensity * 0.5);
+            tubeMat.emissive = electricColor;
+            tubeMat.emissiveIntensity = 0.2 + currentIntensity * 0.6;
+            tubeMat.clearcoat = 0.8 + currentIntensity * 0.2;
+            tubeMat.clearcoatRoughness = 0.1;
+            tubeMat.metalness = 0.1 + currentIntensity * 0.15;
+            tubeMat.roughness = 0.25 - currentIntensity * 0.1;
+            tubeMat.opacity = 0.9 + mode3DIntensity * 0.1;
           }
 
           filamentTube.rotation.z = rotationRef.current;

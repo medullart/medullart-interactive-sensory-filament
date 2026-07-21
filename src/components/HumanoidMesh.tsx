@@ -1,7 +1,6 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import type { AudioData } from '@/hooks/useAudioAnalyzer';
-import { generateNormalMap, generateRoughnessMap } from '@/utils/proceduralTextures';
 
 interface HumanoidMeshProps {
   audioData: AudioData;
@@ -9,119 +8,32 @@ interface HumanoidMeshProps {
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
-// Rainbow spiral colors for initial colorful filaments
-const RAINBOW_COLORS = [
-  0xff0066, // Magenta-pink
-  0xff3300, // Red-orange  
-  0xffaa00, // Orange-yellow
-  0x88ff00, // Yellow-green
-  0x00ff88, // Green-cyan
-  0x00aaff, // Cyan-blue
-  0x4400ff, // Blue-violet
-  0x8800ff, // Violet
-  0xff00aa, // Pink-magenta
+// Pastelae-style color palette - soft, ethereal, cinematic
+const PASTELAE_COLORS = [
+0xff6b8a, // Soft coral
+0x7b68ee, // Medium slate blue
+0x48d1cc, // Medium turquoise
+0xffa07a, // Light salmon
+0x87ceeb, // Sky blue
+0xdda0dd, // Plum
+0x98fb98, // Pale green
+0xf0e68c, // Khaki
+0xffb6c1, // Light pink
+0xadd8e6, // Light blue
+0xe6e6fa, // Lavender
+0xffdab9 // Peach puff
 ];
 
-// Generate random aesthetic parameters
-function generateAesthetic() {
-  // Random color palettes - cinematic/diverse variety
-  const palettes = [
-    // Rainbow Spiral (primary style)
-    { primary: 0xff0088, secondary: 0x00ffaa, accent: 0xffaa00, ambient: 0x050508, style: 'rainbow' },
-    // Monochrome Silver
-    { primary: 0xcccccc, secondary: 0x888888, accent: 0xffffff, ambient: 0x080810, style: 'mono' },
-    // Cyberpunk Neon
-    { primary: 0x00ffff, secondary: 0xff00ff, accent: 0x00ff88, ambient: 0x050510, style: 'neon' },
-    // Deep Purple
-    { primary: 0x8844ff, secondary: 0xff44aa, accent: 0xaa88ff, ambient: 0x050408, style: 'purple' },
-    // Ocean Depths
-    { primary: 0x0066cc, secondary: 0x00aaff, accent: 0x003388, ambient: 0x030508, style: 'ocean' },
-    // Plasma Fire
-    { primary: 0xff4400, secondary: 0xff0066, accent: 0xffaa00, ambient: 0x080303, style: 'fire' },
-    // Arctic Glow
-    { primary: 0x66aaff, secondary: 0xaaddff, accent: 0x4488cc, ambient: 0x040608, style: 'arctic' },
-    // Emerald Dreams
-    { primary: 0x00cc66, secondary: 0x22ff88, accent: 0x00aa44, ambient: 0x030504, style: 'emerald' },
-  ];
-
-  const palette = palettes[Math.floor(Math.random() * palettes.length)];
-  
-  // Generate filament colors - rainbow gradient for 'rainbow' style, otherwise from palette
-  let filamentColors: THREE.Color[];
-  
-  if ((palette as { style?: string }).style === 'rainbow' || Math.random() < 0.4) {
-    // Rainbow spiral colors with variations
-    filamentColors = RAINBOW_COLORS.map(c => {
-      const color = new THREE.Color(c);
-      // Slight random variation
-      color.r = Math.min(1, color.r + (Math.random() - 0.5) * 0.15);
-      color.g = Math.min(1, color.g + (Math.random() - 0.5) * 0.15);
-      color.b = Math.min(1, color.b + (Math.random() - 0.5) * 0.15);
-      return color;
-    });
-  } else {
-    filamentColors = [
-      new THREE.Color(palette.primary),
-      new THREE.Color(palette.secondary),
-      new THREE.Color(palette.accent),
-      new THREE.Color(palette.primary).lerp(new THREE.Color(palette.secondary), 0.3 + Math.random() * 0.4),
-      new THREE.Color(palette.secondary).lerp(new THREE.Color(palette.accent), 0.3 + Math.random() * 0.4),
-      new THREE.Color(palette.accent).lerp(new THREE.Color(palette.primary), 0.3 + Math.random() * 0.4),
-    ];
-  }
-
-  // More diverse head shape variations
-  const headStyles = [
-    'classic',      // Standard human proportions
-    'elongated',    // Taller, thinner
-    'angular',      // More defined bone structure
-    'soft',         // Rounder features
-    'dramatic',     // Exaggerated features
-    'ethereal',     // Otherworldly
-  ];
-  
-  const headStyle = headStyles[Math.floor(Math.random() * headStyles.length)];
-
-  // Style-specific parameters
-  const styleParams: Record<string, { scale: number; elongation: number; cheekbones: number; jawWidth: number; foreheadSize: number; noseLength: number }> = {
-    classic: { scale: 1.3, elongation: 1.35, cheekbones: 0.08, jawWidth: 0.65, foreheadSize: 0.12, noseLength: 0.18 },
-    elongated: { scale: 1.2, elongation: 1.55, cheekbones: 0.06, jawWidth: 0.55, foreheadSize: 0.15, noseLength: 0.22 },
-    angular: { scale: 1.35, elongation: 1.4, cheekbones: 0.12, jawWidth: 0.7, foreheadSize: 0.1, noseLength: 0.16 },
-    soft: { scale: 1.4, elongation: 1.25, cheekbones: 0.05, jawWidth: 0.75, foreheadSize: 0.1, noseLength: 0.14 },
-    dramatic: { scale: 1.35, elongation: 1.45, cheekbones: 0.15, jawWidth: 0.6, foreheadSize: 0.18, noseLength: 0.2 },
-    ethereal: { scale: 1.25, elongation: 1.5, cheekbones: 0.04, jawWidth: 0.5, foreheadSize: 0.14, noseLength: 0.12 },
-  };
-
-  const params = styleParams[headStyle];
-
-  return {
-    palette,
-    filamentColors,
-    headStyle,
-    headScale: params.scale + (Math.random() - 0.5) * 0.2,
-    headElongation: params.elongation + (Math.random() - 0.5) * 0.15,
-    cheekboneIntensity: params.cheekbones + (Math.random() - 0.5) * 0.04,
-    jawWidth: params.jawWidth + (Math.random() - 0.5) * 0.1,
-    foreheadSize: params.foreheadSize + (Math.random() - 0.5) * 0.04,
-    noseLength: params.noseLength + (Math.random() - 0.5) * 0.04,
-    headMetalness: 0.8 + Math.random() * 0.15,
-    headRoughness: 0.05 + Math.random() * 0.1,
-    // Movement parameters for live show feel
-    moveSpeed: 0.15 + Math.random() * 0.2,
-    moveRange: 1.5 + Math.random() * 1.0,
-    rotationIntensity: 0.3 + Math.random() * 0.4,
-  };
-}
-
-interface FilamentData {
+interface ThickFilament {
   mesh: THREE.Mesh;
   basePositions: Float32Array;
-  velocity: THREE.Vector3;
-  angularVelocity: THREE.Vector3;
+  color: THREE.Color;
   spawnTime: number;
   lifespan: number;
-  floatPhase: number;
-  floatSpeed: number;
+  thickness: number;
+  phase: number;
+  speed: number;
+  curveStyle: 'spiral' | 'wave' | 'organic';
 }
 
 export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMeshProps) {
@@ -129,81 +41,49 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const faceGroupRef = useRef<THREE.Group | null>(null);
-  const filamentsGroupRef = useRef<THREE.Group | null>(null);
-  const timeRef = useRef(0);
   const animationIdRef = useRef<number>(0);
-  const headMeshRef = useRef<THREE.Mesh | null>(null);
-  const featureMeshesRef = useRef<THREE.Mesh[]>([]);
-  const filamentsRef = useRef<FilamentData[]>([]);
-  const particlesRef = useRef<THREE.Points | null>(null);
+  const timeRef = useRef(0);
+  const filamentsRef = useRef<ThickFilament[]>([]);
+  const filamentsGroupRef = useRef<THREE.Group | null>(null);
+  const faceGroupRef = useRef<THREE.Group | null>(null);
   const lastSpawnTimeRef = useRef(0);
-  const aestheticRef = useRef(generateAesthetic());
-  const lightsRef = useRef<THREE.Light[]>([]);
-  const envMapRef = useRef<THREE.Texture | null>(null);
-  
-  // Beat detection refs for snare/accent hits
-  const prevMidRef = useRef(0);
-  const prevHighRef = useRef(0);
   const beatIntensityRef = useRef(0);
-  const lastBeatTimeRef = useRef(0);
-  const beatCooldownRef = useRef(0);
-  
-  // Quantum teleport refs for head movement
-  const teleportTargetRef = useRef({ x: 0, y: 0, z: 0 });
-  const lastTeleportTimeRef = useRef(0);
-  const teleportPhaseRef = useRef(0); // 0 = stable, 1 = glitching, 2 = teleporting
-  const glitchIntensityRef = useRef(0);
+  const prevMidRef = useRef(0);
+  const totalFilamentsSpawnedRef = useRef(0);
+  const [generationKey] = useState(() => Math.random());
 
-  // Generate new aesthetic each time component becomes active
-  const [generationKey, setGenerationKey] = useState(0);
-
+  // Initialize scene
   useEffect(() => {
-    if (isActive) {
-      aestheticRef.current = generateAesthetic();
-      setGenerationKey(prev => prev + 1);
-    }
-  }, [isActive]);
+    if (!containerRef.current || !isActive) return;
 
-  // Generate textures
-  const textures = useMemo(() => ({
-    normalMap: generateNormalMap(512),
-    roughnessMap: generateRoughnessMap(256)
-  }), []);
-
-  // Main scene setup - regenerates with new aesthetic
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const aesthetic = aestheticRef.current;
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
 
-    // Clear existing scene if any
     if (rendererRef.current) {
       rendererRef.current.dispose();
     }
 
-    // Scene
+    // Scene with deep black
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     sceneRef.current = scene;
 
     // Camera
-    const camera = new THREE.PerspectiveCamera(40, containerWidth / containerHeight, 0.1, 1000);
-    camera.position.z = 5;
+    const camera = new THREE.PerspectiveCamera(45, containerWidth / containerHeight, 0.1, 1000);
+    camera.position.z = 6;
     cameraRef.current = camera;
 
-    // Renderer
+    // Renderer - Octane-style settings
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       preserveDrawingBuffer: true,
-      alpha: false
+      alpha: false,
+      powerPreference: 'high-performance'
     });
     renderer.setSize(containerWidth, containerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.85;
+    renderer.toneMappingExposure = 1.1;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -214,304 +94,144 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
       onCanvasReady(renderer.domElement);
     }
 
-    // === CINEMATIC DARK LIGHTING - Starts dark, illuminates on audio ===
-    lightsRef.current = [];
-
-    // Very subtle ambient - starts almost black
-    const ambientLight = new THREE.AmbientLight(0x030305, 0.15);
+    // === CINEMATIC LIGHTING - Pastelae/Octane style ===
+    // Subtle ambient
+    const ambientLight = new THREE.AmbientLight(0x101018, 0.3);
     scene.add(ambientLight);
-    lightsRef.current.push(ambientLight);
 
-    // Main key light - soft white from front-right (cinematic)
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    keyLight.position.set(3, 2, 4);
+    // Main key light - soft warm
+    const keyLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
+    keyLight.position.set(3, 4, 5);
+    keyLight.castShadow = true;
     scene.add(keyLight);
-    lightsRef.current.push(keyLight);
 
-    // Colorful rim lights for rainbow filament illumination
-    const rimLeft = new THREE.SpotLight(new THREE.Color(aesthetic.filamentColors[0] || 0xff0088), 1.2, 20, Math.PI / 3, 0.8);
-    rimLeft.position.set(-5, 1, -3);
+    // Colored rim lights for Pastelae aesthetic
+    const rimLeft = new THREE.SpotLight(0xff6b8a, 1.5, 25, Math.PI / 4, 0.7);
+    rimLeft.position.set(-6, 2, -3);
     rimLeft.lookAt(0, 0, 0);
     scene.add(rimLeft);
-    lightsRef.current.push(rimLeft);
 
-    const rimRight = new THREE.SpotLight(new THREE.Color(aesthetic.filamentColors[3] || 0x00ffaa), 1.0, 20, Math.PI / 3, 0.8);
-    rimRight.position.set(5, -1, -3);
+    const rimRight = new THREE.SpotLight(0x7b68ee, 1.2, 25, Math.PI / 4, 0.7);
+    rimRight.position.set(6, -2, -3);
     rimRight.lookAt(0, 0, 0);
     scene.add(rimRight);
-    lightsRef.current.push(rimRight);
-    
-    // Additional color accent light from below
-    const bottomLight = new THREE.PointLight(new THREE.Color(aesthetic.filamentColors[5] || 0xffaa00), 0.6, 15);
-    bottomLight.position.set(0, -4, 2);
+
+    // Bottom fill light - warm
+    const bottomLight = new THREE.PointLight(0xffa07a, 0.6, 15);
+    bottomLight.position.set(0, -5, 3);
     scene.add(bottomLight);
-    lightsRef.current.push(bottomLight);
 
-    // Subtle top light for depth
-    const topLight = new THREE.DirectionalLight(0x8888aa, 0.25);
-    topLight.position.set(0, 6, 2);
+    // Top accent
+    const topLight = new THREE.DirectionalLight(0x87ceeb, 0.4);
+    topLight.position.set(0, 8, 2);
     scene.add(topLight);
-    lightsRef.current.push(topLight);
 
-    // === FACE GROUP ===
+    // === SINISTER FACE IN BACKGROUND ===
     const faceGroup = new THREE.Group();
     scene.add(faceGroup);
     faceGroupRef.current = faceGroup;
 
-    // === FILAMENTS GROUP ===
-    const filamentsGroup = new THREE.Group();
-    scene.add(filamentsGroup);
-    filamentsGroupRef.current = filamentsGroup;
-
-    // === ABSTRACT WIREFRAME FACE (no full head) ===
-    // Create a flat face mesh with wireframe overlay
-    const faceScale = 1.8 + Math.random() * 0.4;
-    const faceGeometry = new THREE.PlaneGeometry(faceScale * 1.2, faceScale * 1.5, 48, 60);
+    // Dark, ominous face shape
+    const faceGeometry = new THREE.PlaneGeometry(4, 5, 64, 80);
     const facePositions = faceGeometry.attributes.position;
 
-    // Deform plane into face-like shape
+    // Deform into sinister face
     for (let i = 0; i < facePositions.count; i++) {
       const x = facePositions.getX(i);
       const y = facePositions.getY(i);
       let z = 0;
 
-      const nx = x / (faceScale * 0.6);
-      const ny = y / (faceScale * 0.75);
-      
-      // Face curvature - push center forward
-      const distFromCenter = Math.sqrt(nx * nx + ny * ny);
-      z = Math.max(0, (1 - distFromCenter) * 0.6);
-      
-      // Forehead bulge
-      if (ny > 0.3 && ny < 0.8) {
-        z += Math.sin((ny - 0.3) * Math.PI / 0.5) * 0.15 * (1 - Math.abs(nx) * 0.5);
-      }
-      
-      // Brow ridge
-      if (ny > 0.15 && ny < 0.35 && Math.abs(nx) < 0.6) {
-        z += 0.08 * (1 - Math.abs(ny - 0.25) * 5) * (1 - Math.abs(nx));
-      }
-      
-      // Eye sockets - indent
-      const leftEyeX = -0.28, rightEyeX = 0.28, eyeY = 0.18;
-      const leftEyeDist = Math.sqrt(Math.pow(nx - leftEyeX, 2) + Math.pow(ny - eyeY, 2));
-      const rightEyeDist = Math.sqrt(Math.pow(nx - rightEyeX, 2) + Math.pow(ny - eyeY, 2));
-      if (leftEyeDist < 0.18) z -= (1 - leftEyeDist / 0.18) * 0.12;
-      if (rightEyeDist < 0.18) z -= (1 - rightEyeDist / 0.18) * 0.12;
-      
-      // Nose bridge
-      if (ny > -0.1 && ny < 0.25 && Math.abs(nx) < 0.1) {
-        z += 0.2 * (1 - Math.abs(nx) * 10) * (1 - Math.abs(ny - 0.07) * 3);
-      }
-      
-      // Cheekbones
-      if (ny > -0.15 && ny < 0.1 && Math.abs(nx) > 0.25 && Math.abs(nx) < 0.55) {
-        z += 0.08 * (1 - Math.abs(ny) * 4);
-      }
-      
-      // Mouth indent
-      if (ny > -0.45 && ny < -0.25 && Math.abs(nx) < 0.25) {
-        z -= 0.05 * (1 - Math.abs(nx) * 4) * (1 - Math.abs(ny + 0.35) * 5);
-      }
-      
-      // Jaw line
-      if (ny < -0.3) {
-        const jawFade = 1 + ny * 1.5;
-        z *= Math.max(0, jawFade);
-      }
+      const nx = x / 2;
+      const ny = y / 2.5;
+      const dist = Math.sqrt(nx * nx + ny * ny);
+
+      // Face bulge
+      z = Math.max(0, (1 - dist * 0.8) * 0.8);
+
+      // Deep eye sockets - more pronounced
+      const leftEyeX = -0.35,rightEyeX = 0.35,eyeY = 0.25;
+      const leftDist = Math.sqrt(Math.pow(nx - leftEyeX, 2) + Math.pow(ny - eyeY, 2));
+      const rightDist = Math.sqrt(Math.pow(nx - rightEyeX, 2) + Math.pow(ny - eyeY, 2));
+      if (leftDist < 0.22) z -= (1 - leftDist / 0.22) * 0.25;
+      if (rightDist < 0.22) z -= (1 - rightDist / 0.22) * 0.25;
 
       facePositions.setXYZ(i, x, y, z);
     }
     faceGeometry.computeVertexNormals();
 
-    // Wireframe material - metallic mesh look
-    const wireMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x181820,
-      metalness: 0.9,
-      roughness: 0.2,
-      wireframe: true,
-      emissive: new THREE.Color(aesthetic.palette.primary).multiplyScalar(0.1),
-      emissiveIntensity: 0.3
-    });
-    
-    const wireframeFace = new THREE.Mesh(faceGeometry.clone(), wireMaterial);
-    wireframeFace.position.z = 0.02;
-    faceGroup.add(wireframeFace);
-    
-    // Solid dark base face underneath
-    const baseMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x0a0a10,
-      metalness: 0.7,
-      roughness: 0.3,
-      clearcoat: 0.6,
-      clearcoatRoughness: 0.2,
-      envMapIntensity: 0.5,
+    // Dark matte face material
+    const faceMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x050508,
+      metalness: 0.2,
+      roughness: 0.8,
       transparent: true,
-      opacity: 0.85
+      opacity: 0.6
     });
-    
-    const baseFace = new THREE.Mesh(faceGeometry, baseMaterial);
-    faceGroup.add(baseFace);
-    headMeshRef.current = baseFace;
-    featureMeshesRef.current = [wireframeFace];
+    const faceMesh = new THREE.Mesh(faceGeometry, faceMaterial);
+    faceGroup.add(faceMesh);
 
-    // Create simple gradient environment for realistic reflections
-    const envScene = new THREE.Scene();
-    const envGeo = new THREE.SphereGeometry(50, 32, 32);
-    const envMat = new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      uniforms: {
-        topColor: { value: new THREE.Color(aesthetic.palette.primary).multiplyScalar(0.15) },
-        bottomColor: { value: new THREE.Color(aesthetic.palette.secondary).multiplyScalar(0.1) },
-        offset: { value: 10 },
-        exponent: { value: 0.6 }
-      },
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        void main() {
-          vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPosition.xyz;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 topColor;
-        uniform vec3 bottomColor;
-        uniform float offset;
-        uniform float exponent;
-        varying vec3 vWorldPosition;
-        void main() {
-          float h = normalize(vWorldPosition + offset).y;
-          gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
-        }
-      `
-    });
-    const envSphere = new THREE.Mesh(envGeo, envMat);
-    envScene.add(envSphere);
-    
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    pmremGenerator.compileEquirectangularShader();
-    const envMap = pmremGenerator.fromScene(envScene, 0, 0.1, 100).texture;
-    scene.environment = envMap;
-    envMapRef.current = envMap;
+    // === SINISTER GLOWING EYES ===
+    const eyeGeometry = new THREE.SphereGeometry(0.25, 32, 24);
 
-    // === GLOWING EYES - bright white like reference image ===
-    const eyeSpacing = 0.5 + Math.random() * 0.15;
-    const eyeY = 0.32 + Math.random() * 0.1;
-    const eyeSize = 0.18 + Math.random() * 0.08;
-    
-    const eyeGeometry = new THREE.SphereGeometry(eyeSize, 32, 24);
-    const eyeMaterial = new THREE.MeshBasicMaterial({
+    // Left eye - bright, unsettling
+    const leftEyeMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
       opacity: 0.95
     });
-    
-    // Add glow effect with larger transparent sphere
-    const eyeGlowGeometry = new THREE.SphereGeometry(eyeSize * 1.8, 16, 12);
-    const eyeGlowMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(aesthetic.palette.primary),
+    const leftEye = new THREE.Mesh(eyeGeometry, leftEyeMaterial);
+    leftEye.position.set(-0.7, 0.6, 0.4);
+    leftEye.scale.set(1.2, 0.5, 0.3);
+    faceGroup.add(leftEye);
+
+    // Left eye glow
+    const leftGlowGeometry = new THREE.SphereGeometry(0.5, 16, 12);
+    const leftGlowMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff4466,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.3,
       blending: THREE.AdditiveBlending
     });
-    
-    const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-    leftEye.position.set(-eyeSpacing, eyeY, 0.55);
-    leftEye.scale.set(1.4, 0.65, 0.4);
-    faceGroup.add(leftEye);
-    
-    const leftGlow = new THREE.Mesh(eyeGlowGeometry, eyeGlowMaterial);
+    const leftGlow = new THREE.Mesh(leftGlowGeometry, leftGlowMaterial);
     leftGlow.position.copy(leftEye.position);
-    leftGlow.scale.set(1.4, 0.65, 0.4);
     faceGroup.add(leftGlow);
-    
-    const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial.clone());
-    rightEye.position.set(eyeSpacing, eyeY, 0.55);
-    rightEye.scale.set(1.4, 0.65, 0.4);
-    faceGroup.add(rightEye);
-    
-    const rightGlowMat = eyeGlowMaterial.clone();
-    rightGlowMat.color = new THREE.Color(aesthetic.palette.secondary);
-    const rightGlow = new THREE.Mesh(eyeGlowGeometry, rightGlowMat);
-    rightGlow.position.copy(rightEye.position);
-    rightGlow.scale.set(1.4, 0.65, 0.4);
-    faceGroup.add(rightGlow);
-    
-    featureMeshesRef.current.push(leftEye, rightEye, leftGlow, rightGlow);
-    
-    // Store eye references for animation
-    (faceGroup as THREE.Group & { leftEye?: THREE.Mesh; rightEye?: THREE.Mesh }).leftEye = leftEye;
-    (faceGroup as THREE.Group & { leftEye?: THREE.Mesh; rightEye?: THREE.Mesh }).rightEye = rightEye;
-    
-    // === SUBTLE NOSE LINE ===
-    const noseGeometry = new THREE.CylinderGeometry(0.02, 0.04, 0.35, 8);
-    const noseMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x151520,
-      metalness: 0.8,
-      roughness: 0.25,
-      emissive: new THREE.Color(aesthetic.palette.accent).multiplyScalar(0.15),
-      emissiveIntensity: 0.3
-    });
-    const nose = new THREE.Mesh(noseGeometry, noseMaterial);
-    nose.position.set(0, 0.05, 0.65);
-    nose.rotation.x = Math.PI * 0.15;
-    faceGroup.add(nose);
-    featureMeshesRef.current.push(nose);
-    
-    // === MOUTH - subtle dark line ===
-    const mouthWidth = 0.3 + Math.random() * 0.1;
-    const mouthGeometry = new THREE.TorusGeometry(mouthWidth, 0.015, 8, 20, Math.PI);
-    const mouthMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x080810,
-      metalness: 0.7,
-      roughness: 0.3,
-      emissive: new THREE.Color(aesthetic.palette.secondary).multiplyScalar(0.1),
-      emissiveIntensity: 0.2
-    });
-    const mouth = new THREE.Mesh(mouthGeometry, mouthMaterial);
-    mouth.position.set(0, -0.42 - Math.random() * 0.08, 0.45);
-    mouth.rotation.x = Math.PI;
-    mouth.rotation.z = Math.PI;
-    faceGroup.add(mouth);
-    featureMeshesRef.current.push(mouth);
 
-    // Position face in background, slightly smaller
-    faceGroup.position.z = -1.5;
-    faceGroup.scale.set(0.85, 0.85, 0.85);
-    
-    // === SUBTLE PARTICLES - dust/atmosphere ===
-    const particleCount = 80;
-    const particleGeometry = new THREE.BufferGeometry();
-    const particlePositions = new Float32Array(particleCount * 3);
-    const particleColors = new Float32Array(particleCount * 3);
-
-    for (let i = 0; i < particleCount; i++) {
-      particlePositions[i * 3] = (Math.random() - 0.5) * 8;
-      particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 6;
-      particlePositions[i * 3 + 2] = Math.random() * 4 - 2;
-
-      const color = aesthetic.filamentColors[Math.floor(Math.random() * aesthetic.filamentColors.length)];
-      particleColors[i * 3] = color.r * 0.5;
-      particleColors[i * 3 + 1] = color.g * 0.5;
-      particleColors[i * 3 + 2] = color.b * 0.5;
-    }
-
-    particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-    particleGeometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
-
-    const particleMaterial = new THREE.PointsMaterial({
-      size: 0.03,
-      vertexColors: true,
+    // Right eye
+    const rightEyeMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.4,
-      blending: THREE.AdditiveBlending,
-      sizeAttenuation: true
+      opacity: 0.95
     });
+    const rightEye = new THREE.Mesh(eyeGeometry, rightEyeMaterial);
+    rightEye.position.set(0.7, 0.6, 0.4);
+    rightEye.scale.set(1.2, 0.5, 0.3);
+    faceGroup.add(rightEye);
 
-    const particles = new THREE.Points(particleGeometry, particleMaterial);
-    filamentsGroup.add(particles);
-    particlesRef.current = particles;
+    // Right eye glow
+    const rightGlowMaterial = new THREE.MeshBasicMaterial({
+      color: 0x6644ff,
+      transparent: true,
+      opacity: 0.3,
+      blending: THREE.AdditiveBlending
+    });
+    const rightGlow = new THREE.Mesh(leftGlowGeometry.clone(), rightGlowMaterial);
+    rightGlow.position.copy(rightEye.position);
+    faceGroup.add(rightGlow);
+
+    // Store eye references
+    (faceGroup as THREE.Group & {leftEye?: THREE.Mesh;rightEye?: THREE.Mesh;leftGlow?: THREE.Mesh;rightGlow?: THREE.Mesh;}).leftEye = leftEye;
+    (faceGroup as THREE.Group & {leftEye?: THREE.Mesh;rightEye?: THREE.Mesh;leftGlow?: THREE.Mesh;rightGlow?: THREE.Mesh;}).rightEye = rightEye;
+    (faceGroup as THREE.Group & {leftEye?: THREE.Mesh;rightEye?: THREE.Mesh;leftGlow?: THREE.Mesh;rightGlow?: THREE.Mesh;}).leftGlow = leftGlow;
+    (faceGroup as THREE.Group & {leftEye?: THREE.Mesh;rightEye?: THREE.Mesh;leftGlow?: THREE.Mesh;rightGlow?: THREE.Mesh;}).rightGlow = rightGlow;
+
+    // Position face deep in background
+    faceGroup.position.z = -4;
+    faceGroup.scale.set(1.2, 1.2, 1.2);
+
+    // === FILAMENTS GROUP ===
+    const filamentsGroup = new THREE.Group();
+    scene.add(filamentsGroup);
+    filamentsGroupRef.current = filamentsGroup;
 
     // Cleanup
     const container = containerRef.current;
@@ -522,173 +242,119 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
         (f.mesh.material as THREE.Material).dispose();
       });
       filamentsRef.current = [];
-      featureMeshesRef.current = [];
       if (container && renderer.domElement) {
         container.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };
-  }, [textures, onCanvasReady, generationKey]);
+  }, [isActive, onCanvasReady, generationKey]);
 
   // Animation loop
   useEffect(() => {
     if (!isActive) return;
 
-    const aesthetic = aestheticRef.current;
-
+    // Spawn thick colorful filament
     const spawnFilament = () => {
       if (!filamentsGroupRef.current) return;
 
-      const colorIndex = Math.floor(Math.random() * aesthetic.filamentColors.length);
-      const color = aesthetic.filamentColors[colorIndex];
+      const colorHex = PASTELAE_COLORS[Math.floor(Math.random() * PASTELAE_COLORS.length)];
+      const color = new THREE.Color(colorHex);
 
-      // SPIRAL/WAVY filament - creates organic curved patterns like reference
-      const filamentStyle = Math.random();
-      const x = (Math.random() - 0.5) * 3.5;
-      const startY = 6 + Math.random() * 1;
-      const endY = -6 - Math.random() * 1;
-      const z = 0.2 + Math.random() * 1.5;
-      
-      let points: THREE.Vector3[];
-      
-      if (filamentStyle < 0.35) {
-        // SPIRAL pattern - like the rainbow spiral reference
-        const spiralRadius = 0.3 + Math.random() * 0.4;
-        const spiralTurns = 2 + Math.random() * 3;
-        const spiralPoints = 12;
-        points = [];
-        for (let i = 0; i < spiralPoints; i++) {
-          const t = i / (spiralPoints - 1);
+      // THICK filaments - much bigger than before
+      const thickness = 0.08 + Math.random() * 0.15;
+      const curveStyles: ('spiral' | 'wave' | 'organic')[] = ['spiral', 'wave', 'organic'];
+      const curveStyle = curveStyles[Math.floor(Math.random() * curveStyles.length)];
+
+      // Generate curve points based on style
+      const startX = (Math.random() - 0.5) * 6;
+      const startY = 5 + Math.random() * 2;
+      const endY = -5 - Math.random() * 2;
+      const z = 0.5 + Math.random() * 2;
+
+      const points: THREE.Vector3[] = [];
+      const numPoints = 15;
+
+      if (curveStyle === 'spiral') {
+        const spiralRadius = 0.5 + Math.random() * 0.8;
+        const turns = 2 + Math.random() * 4;
+        for (let i = 0; i < numPoints; i++) {
+          const t = i / (numPoints - 1);
           const y = startY + (endY - startY) * t;
-          const angle = t * Math.PI * 2 * spiralTurns;
-          const r = spiralRadius * (0.5 + Math.sin(t * Math.PI) * 0.5);
+          const angle = t * Math.PI * 2 * turns;
+          const r = spiralRadius * (0.3 + Math.sin(t * Math.PI) * 0.7);
           points.push(new THREE.Vector3(
-            x + Math.cos(angle) * r,
+            startX + Math.cos(angle) * r,
             y,
-            z + Math.sin(angle) * r * 0.5
+            z + Math.sin(angle) * r * 0.6
           ));
         }
-      } else if (filamentStyle < 0.65) {
-        // WAVE pattern - oscillating curves
-        const waveAmplitude = 0.2 + Math.random() * 0.3;
-        const waveFreq = 3 + Math.random() * 4;
-        const wavePoints = 10;
-        points = [];
-        for (let i = 0; i < wavePoints; i++) {
-          const t = i / (wavePoints - 1);
+      } else if (curveStyle === 'wave') {
+        const waveAmp = 0.4 + Math.random() * 0.6;
+        const waveFreq = 3 + Math.random() * 5;
+        for (let i = 0; i < numPoints; i++) {
+          const t = i / (numPoints - 1);
           const y = startY + (endY - startY) * t;
-          const wave = Math.sin(t * Math.PI * waveFreq) * waveAmplitude;
           points.push(new THREE.Vector3(
-            x + wave,
+            startX + Math.sin(t * Math.PI * waveFreq) * waveAmp,
             y,
-            z + Math.cos(t * Math.PI * waveFreq * 0.7) * waveAmplitude * 0.3
+            z + Math.cos(t * Math.PI * waveFreq * 0.7) * waveAmp * 0.4
           ));
         }
       } else {
-        // ORGANIC curve - gentle S-curves
-        points = [
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, startY, z),
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.5, startY * 0.5, z + 0.2),
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.4, startY * 0.2, z + 0.3),
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.35, 0, z + 0.35),
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.4, endY * 0.2, z + 0.3),
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.5, endY * 0.5, z + 0.2),
-          new THREE.Vector3(x + (Math.random() - 0.5) * 0.3, endY, z),
-        ];
+        // Organic S-curves
+        for (let i = 0; i < numPoints; i++) {
+          const t = i / (numPoints - 1);
+          const y = startY + (endY - startY) * t;
+          const noise = Math.sin(t * 8 + Math.random() * 5) * 0.3;
+          points.push(new THREE.Vector3(
+            startX + noise + (Math.random() - 0.5) * 0.4,
+            y,
+            z + (Math.random() - 0.5) * 0.3
+          ));
+        }
       }
 
       const curve = new THREE.CatmullRomCurve3(points, false, 'catmullrom', 0.5);
-      const thickness = 0.018 + Math.random() * 0.022;
-      const geometry = new THREE.TubeGeometry(curve, 80, thickness, 20, false);
+      const geometry = new THREE.TubeGeometry(curve, 100, thickness, 32, false);
 
-      // LATEX/PLASTIC material - glossy, reflective, cinematic
-      const materialTypes = ['latex', 'plastic', 'rubber'];
-      const matType = materialTypes[Math.floor(Math.random() * materialTypes.length)];
-      
-      let material: THREE.MeshPhysicalMaterial;
-      
-      if (matType === 'latex') {
-        // Shiny latex look
-        material = new THREE.MeshPhysicalMaterial({
-          color: color.clone().multiplyScalar(0.4),
-          metalness: 0.1,
-          roughness: 0.08,
-          clearcoat: 1.0,
-          clearcoatRoughness: 0.02,
-          reflectivity: 1.0,
-          sheen: 1.0,
-          sheenRoughness: 0.1,
-          sheenColor: color,
-          emissive: color,
-          emissiveIntensity: 0.08,
-          transparent: true,
-          opacity: 0.92,
-          envMap: envMapRef.current,
-          envMapIntensity: 1.2,
-          ior: 1.6
-        });
-      } else if (matType === 'plastic') {
-        // Hard plastic look
-        material = new THREE.MeshPhysicalMaterial({
-          color: color.clone().multiplyScalar(0.6),
-          metalness: 0.0,
-          roughness: 0.15,
-          clearcoat: 0.9,
-          clearcoatRoughness: 0.1,
-          reflectivity: 0.8,
-          emissive: color,
-          emissiveIntensity: 0.05,
-          transparent: true,
-          opacity: 0.95,
-          envMap: envMapRef.current,
-          envMapIntensity: 0.8,
-          ior: 1.5
-        });
-      } else {
-        // Matte rubber look
-        material = new THREE.MeshPhysicalMaterial({
-          color: color.clone().multiplyScalar(0.5),
-          metalness: 0.05,
-          roughness: 0.35,
-          clearcoat: 0.4,
-          clearcoatRoughness: 0.3,
-          reflectivity: 0.4,
-          sheen: 0.3,
-          sheenRoughness: 0.5,
-          sheenColor: color.clone().multiplyScalar(0.3),
-          emissive: color,
-          emissiveIntensity: 0.03,
-          transparent: true,
-          opacity: 0.98,
-          envMap: envMapRef.current,
-          envMapIntensity: 0.4
-        });
-      }
+      // Pastelae-style material - soft, glossy, colorful
+      const material = new THREE.MeshPhysicalMaterial({
+        color: color.clone().multiplyScalar(0.7),
+        metalness: 0.15,
+        roughness: 0.2,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.05,
+        sheen: 1.0,
+        sheenRoughness: 0.2,
+        sheenColor: color,
+        emissive: color,
+        emissiveIntensity: 0.15,
+        transparent: true,
+        opacity: 0.95,
+        ior: 1.5
+      });
 
       const mesh = new THREE.Mesh(geometry, material);
       filamentsGroupRef.current.add(mesh);
 
-      const basePositions = new Float32Array(geometry.attributes.position.array);
-
       filamentsRef.current.push({
         mesh,
-        basePositions,
-        velocity: new THREE.Vector3(0, 0, 0), // No drift velocity - stay anchored
-        angularVelocity: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.003,
-          (Math.random() - 0.5) * 0.003,
-          (Math.random() - 0.5) * 0.002
-        ),
+        basePositions: new Float32Array(geometry.attributes.position.array),
+        color,
         spawnTime: timeRef.current,
-        lifespan: 12 + Math.random() * 10,
-        floatPhase: Math.random() * Math.PI * 2,
-        floatSpeed: 0.3 + Math.random() * 0.3
+        lifespan: 8 + Math.random() * 6,
+        thickness,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.3 + Math.random() * 0.5,
+        curveStyle
       });
+
+      totalFilamentsSpawnedRef.current++;
     };
-    
-    // Spawn many initial filaments immediately
-    for (let i = 0; i < 30; i++) {
-      setTimeout(() => spawnFilament(), i * 30);
+
+    // Spawn initial filaments
+    for (let i = 0; i < 15; i++) {
+      spawnFilament();
     }
 
     const animate = () => {
@@ -697,244 +363,104 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
 
       if (faceGroupRef.current && filamentsGroupRef.current && sceneRef.current && cameraRef.current && rendererRef.current) {
         const { bass, treble, volume, mid } = audioData;
-        
-        // === DYNAMIC BACKGROUND ILLUMINATION ===
-        // Background pulses from pure black to subtle illumination on beats
-        const bgIntensity = Math.min(0.08, bass * 0.05 + treble * 0.03);
-        const r = bgIntensity * 0.4;
-        const g = bgIntensity * 0.3;
-        const b = bgIntensity * 0.6;
-        sceneRef.current.background = new THREE.Color(r, g, b);
 
-        // === SNARE/ACCENT DETECTION ===
-        // Snare hits have strong mid-high frequencies with sudden transients
-        const high = treble;
-        const snareRange = mid * 0.6 + high * 0.4; // Snare frequency range
-        
-        // Detect transient (sudden increase)
-        const midDelta = snareRange - prevMidRef.current;
-        const highDelta = high - prevHighRef.current;
-        prevMidRef.current = snareRange * 0.3 + prevMidRef.current * 0.7; // Smooth
-        prevHighRef.current = high * 0.3 + prevHighRef.current * 0.7;
-        
-        // Beat detection - only trigger on sharp transients
-        const transientThreshold = 0.15;
-        const minBeatInterval = 0.12; // Minimum time between beats (prevents double triggers)
-        const timeSinceLastBeat = time - lastBeatTimeRef.current;
-        
-        // Decay beat intensity
-        beatIntensityRef.current *= 0.88;
-        beatCooldownRef.current = Math.max(0, beatCooldownRef.current - 0.016);
-        
-        // Detect snare/accent hit
-        if (midDelta > transientThreshold && timeSinceLastBeat > minBeatInterval && beatCooldownRef.current <= 0) {
-          beatIntensityRef.current = Math.min(1.0, midDelta * 3); // Intensity based on transient strength
-          lastBeatTimeRef.current = time;
-          beatCooldownRef.current = 0.08; // Brief cooldown
+        // Dynamic background illumination
+        const bgIntensity = Math.min(0.06, bass * 0.04 + volume * 0.02);
+        sceneRef.current.background = new THREE.Color(bgIntensity * 0.3, bgIntensity * 0.2, bgIntensity * 0.5);
+
+        // Beat detection
+        const midDelta = mid - prevMidRef.current;
+        prevMidRef.current = mid * 0.3 + prevMidRef.current * 0.7;
+        beatIntensityRef.current *= 0.9;
+        if (midDelta > 0.12) {
+          beatIntensityRef.current = Math.min(1, midDelta * 3);
         }
-        
         const beatHit = beatIntensityRef.current;
-        
-        // === CHAOTIC EYE MOVEMENT based on treble/high frequencies ===
-        const faceGroupTyped = faceGroupRef.current as THREE.Group & { leftEye?: THREE.Mesh; rightEye?: THREE.Mesh };
-        if (faceGroupTyped.leftEye && faceGroupTyped.rightEye) {
-          // Treble-driven micro-movement - chaotic and fast
-          const eyeChaosX = Math.sin(time * 25 + treble * 50) * treble * 0.15;
-          const eyeChaosY = Math.cos(time * 30 + high * 40) * high * 0.12;
-          const eyeSpasm = beatHit * Math.sin(time * 80) * 0.08;
-          
-          // Random direction changes on beats
-          const randomAngle = time * 3 + beatHit * Math.PI * 2;
-          const randomOffsetX = Math.sin(randomAngle) * beatHit * 0.1;
-          const randomOffsetY = Math.cos(randomAngle * 1.3) * beatHit * 0.08;
-          
-          // Apply to left eye
-          faceGroupTyped.leftEye.rotation.x = eyeChaosY + eyeSpasm + randomOffsetY;
-          faceGroupTyped.leftEye.rotation.y = eyeChaosX + randomOffsetX;
-          faceGroupTyped.leftEye.rotation.z = Math.sin(time * 15 + treble * 20) * treble * 0.1;
-          
-          // Apply to right eye (slightly offset for organic feel)
-          faceGroupTyped.rightEye.rotation.x = eyeChaosY + eyeSpasm * 0.8 + randomOffsetY * 1.1;
-          faceGroupTyped.rightEye.rotation.y = -eyeChaosX - randomOffsetX * 0.9;
-          faceGroupTyped.rightEye.rotation.z = -Math.sin(time * 15 + treble * 20) * treble * 0.1;
-          
-          // Scale pulsing with bass
-          const eyeScale = 1 + bass * 0.2 + beatHit * 0.15;
-          faceGroupTyped.leftEye.scale.set(1.4 * eyeScale, 0.65 * eyeScale, 0.4);
-          faceGroupTyped.rightEye.scale.set(1.4 * eyeScale, 0.65 * eyeScale, 0.4);
+
+        // === SINISTER EYES ANIMATION ===
+        const faceTyped = faceGroupRef.current as THREE.Group & {leftEye?: THREE.Mesh;rightEye?: THREE.Mesh;leftGlow?: THREE.Mesh;rightGlow?: THREE.Mesh;};
+        if (faceTyped.leftEye && faceTyped.rightEye) {
+          // Eyes follow audio with subtle creepy movement
+          const eyeX = Math.sin(time * 0.8 + treble * 5) * treble * 0.15;
+          const eyeY = Math.cos(time * 0.6 + mid * 4) * mid * 0.1;
+
+          faceTyped.leftEye.rotation.y = eyeX;
+          faceTyped.leftEye.rotation.x = eyeY;
+          faceTyped.rightEye.rotation.y = -eyeX;
+          faceTyped.rightEye.rotation.x = eyeY;
+
+          // Eye glow pulses with beat
+          const glowIntensity = 0.2 + beatHit * 0.5 + bass * 0.3;
+          if (faceTyped.leftGlow) {
+            (faceTyped.leftGlow.material as THREE.MeshBasicMaterial).opacity = glowIntensity;
+          }
+          if (faceTyped.rightGlow) {
+            (faceTyped.rightGlow.material as THREE.MeshBasicMaterial).opacity = glowIntensity;
+          }
+
+          // Eyes scale with bass
+          const eyeScale = 1 + bass * 0.3 + beatHit * 0.2;
+          faceTyped.leftEye.scale.set(1.2 * eyeScale, 0.5 * eyeScale, 0.3);
+          faceTyped.rightEye.scale.set(1.2 * eyeScale, 0.5 * eyeScale, 0.3);
         }
 
-        // === SPAWN FILAMENTS (very frequent) ===
-        const timeSinceLastSpawn = time - lastSpawnTimeRef.current;
-        const minSpawnInterval = 0.04; // Very fast spawn rate
-        const maxFilaments = 80;
+        // Face subtle movement
+        faceGroupRef.current.rotation.y = Math.sin(time * 0.15) * 0.05;
+        faceGroupRef.current.rotation.x = Math.sin(time * 0.1) * 0.03;
 
-        // Spawn constantly + extra on beats
-        const shouldSpawnOnBeat = beatHit > 0.1 && timeSinceLastSpawn > minSpawnInterval;
-        const shouldSpawnPeriodic = timeSinceLastSpawn > 0.12;
-        
-        if ((shouldSpawnOnBeat || shouldSpawnPeriodic) && filamentsRef.current.length < maxFilaments) {
-          const spawnCount = shouldSpawnOnBeat ? Math.floor(4 + beatHit * 5) : 3;
-          for (let i = 0; i < spawnCount; i++) {
-            spawnFilament();
-          }
+        // === SPAWN MORE FILAMENTS AS AUDIO PROGRESSES ===
+        const timeSinceSpawn = time - lastSpawnTimeRef.current;
+        const spawnRate = 0.15 - volume * 0.08; // Faster spawn with louder audio
+        const maxFilaments = 60 + Math.floor(totalFilamentsSpawnedRef.current * 0.1); // Increases over time
+
+        if (timeSinceSpawn > spawnRate && filamentsRef.current.length < maxFilaments) {
+          spawnFilament();
+          if (beatHit > 0.3) spawnFilament(); // Extra on beats
+          if (beatHit > 0.6) spawnFilament(); // Even more on big beats
           lastSpawnTimeRef.current = time;
         }
 
-        // === RHYTHM-BASED FACE MOVEMENT (teleport to various positions) ===
-        const timeSinceTeleport = time - lastTeleportTimeRef.current;
-        
-        // Teleport on strong beats - quantum/glitch style (more chaotic thresholds)
-        const teleportThreshold = 0.35 + Math.random() * 0.2; // Variable threshold for unpredictability
-        if (beatHit > teleportThreshold && timeSinceTeleport > 0.3) {
-          // Pick a new random position - more extreme range for chaos
-          teleportTargetRef.current = {
-            x: (Math.random() - 0.5) * 3.5 + Math.sin(time * 7) * 0.5,
-            y: (Math.random() - 0.5) * 2.2 + Math.cos(time * 5) * 0.3,
-            z: -1.5 + Math.random() * 0.6 // Stay in background with depth variation
-          };
-          lastTeleportTimeRef.current = time;
-          glitchIntensityRef.current = beatHit * 1.5;
-          
-          // Instant partial jump (glitch effect)
-          const jumpFactor = 0.7;
-          faceGroupRef.current.position.x = faceGroupRef.current.position.x * (1 - jumpFactor) + teleportTargetRef.current.x * jumpFactor;
-          faceGroupRef.current.position.y = faceGroupRef.current.position.y * (1 - jumpFactor) + teleportTargetRef.current.y * jumpFactor;
-        }
-        
-        // Smooth movement toward target with momentum
-        const moveSpeed = 0.06 + beatHit * 0.1;
-        const currentX = faceGroupRef.current.position.x;
-        const currentY = faceGroupRef.current.position.y;
-        const currentZ = faceGroupRef.current.position.z;
-        
-        faceGroupRef.current.position.x += (teleportTargetRef.current.x - currentX) * moveSpeed;
-        faceGroupRef.current.position.y += (teleportTargetRef.current.y - currentY) * moveSpeed;
-        faceGroupRef.current.position.z += (teleportTargetRef.current.z - currentZ) * moveSpeed * 0.3;
-        
-        // Subtle organic sway
-        const swayX = Math.sin(time * 0.6) * 0.04;
-        const swayY = Math.cos(time * 0.5) * 0.025;
-        faceGroupRef.current.position.x += swayX;
-        faceGroupRef.current.position.y += swayY;
-        
-        // Decay glitch
-        glitchIntensityRef.current *= 0.92;
-        
-        // Scale with beat reaction - subtle breathing
-        const breathBase = 0.85 + Math.sin(time * 1.2) * 0.015;
-        const breathScale = breathBase + beatHit * 0.08 + bass * 0.03;
-        faceGroupRef.current.scale.set(breathScale, breathScale * 1.02, breathScale);
-        
-        // Keep face frontal - very minimal rotation
-        faceGroupRef.current.rotation.y = Math.sin(time * 0.25) * 0.02;
-        faceGroupRef.current.rotation.x = Math.sin(time * 0.2) * 0.015 + beatHit * 0.015;
-        faceGroupRef.current.rotation.z = Math.sin(time * 0.15) * 0.01;
-
-        // === FILAMENT PHYSICS ===
-        const filamentsToRemove: FilamentData[] = [];
+        // === ANIMATE FILAMENTS - Reactive to music ===
+        const filamentsToRemove: ThickFilament[] = [];
 
         filamentsRef.current.forEach((filament) => {
           const age = time - filament.spawnTime;
           const lifeProgress = age / filament.lifespan;
-
-          const mat = filament.mesh.material as THREE.MeshPhysicalMaterial;
-          
-          // Liquid forming effect - scale animation instead of fade
-          const formDuration = 0.15;
-          const dissolveDuration = 0.15;
-          
-          if (lifeProgress < formDuration) {
-            // Liquid forming: start thin, expand to full size
-            const formProgress = lifeProgress / formDuration;
-            const easeOut = 1 - Math.pow(1 - formProgress, 3); // Cubic ease out
-            filament.mesh.scale.x = 0.1 + easeOut * 0.9;
-            filament.mesh.scale.z = 0.1 + easeOut * 0.9;
-            mat.opacity = 0.7 + formProgress * 0.3; // Start semi-visible
-          } else if (lifeProgress > (1 - dissolveDuration)) {
-            // Dissolve: shrink and fade
-            const dissolveProgress = (lifeProgress - (1 - dissolveDuration)) / dissolveDuration;
-            const shrink = 1 - dissolveProgress * 0.8;
-            filament.mesh.scale.x = shrink;
-            filament.mesh.scale.z = shrink;
-            mat.opacity = (1 - dissolveProgress) * 1.0;
-          } else {
-            // Full form - solid rubber texture
-            filament.mesh.scale.x = 1;
-            filament.mesh.scale.z = 1;
-            mat.opacity = 1.0;
-          }
 
           if (lifeProgress >= 1) {
             filamentsToRemove.push(filament);
             return;
           }
 
-          // More dynamic swaying - reacts to audio
-          const baseSwayX = Math.sin(time * filament.floatSpeed * 0.6 + filament.floatPhase) * 0.06;
-          const baseSwayZ = Math.cos(time * filament.floatSpeed * 0.5 + filament.floatPhase) * 0.05;
-          
-          // Add beat-reactive displacement
-          const beatSwayX = beatHit * Math.sin(time * 15 + filament.floatPhase) * 0.12;
-          const beatSwayZ = beatHit * Math.cos(time * 12 + filament.floatPhase) * 0.08;
+          const mat = filament.mesh.material as THREE.MeshPhysicalMaterial;
 
-          // Position with beat influence
-          filament.mesh.position.x = baseSwayX + beatSwayX;
-          filament.mesh.position.y = beatHit * Math.sin(time * 20) * 0.05;
-          filament.mesh.position.z = baseSwayZ + beatSwayZ;
-
-          // More dramatic rotation on beats
-          const rotMultiplier = 1 + beatHit * 3;
-          filament.mesh.rotation.x = Math.sin(time * 0.4 + filament.floatPhase) * 0.06 * rotMultiplier;
-          filament.mesh.rotation.y = Math.sin(time * 0.3 + filament.floatPhase) * 0.05 * rotMultiplier;
-          filament.mesh.rotation.z = Math.sin(time * 0.35 + filament.floatPhase) * 0.04 * rotMultiplier;
-
-          // BEAT = Strong reaction on snare/accents - MORE CHAOTIC
-          const beatReaction = beatHit;
-          const vibFreq = 30 + Math.random() * 20; // Randomized vibration frequency
-          
-          // Add chaotic offset based on audio
-          const chaoticOffsetX = Math.sin(time * (15 + treble * 30) + filament.floatPhase) * treble * 0.15;
-          const chaoticOffsetZ = Math.cos(time * (12 + mid * 25) + filament.floatPhase * 1.5) * mid * 0.12;
-          filament.mesh.position.x += chaoticOffsetX;
-          filament.mesh.position.z += chaoticOffsetZ;
-
-          // More dramatic scale pulsing with randomness
-          const scaleRandom = 1 + Math.sin(time * 50 + filament.floatPhase * 10) * 0.05;
-          filament.mesh.scale.y = (1 + beatReaction * 0.35 + bass * 0.12) * scaleRandom;
-          filament.mesh.scale.x = (1 + beatReaction * 0.2 + treble * 0.08) * scaleRandom;
-
-          // Geometry deformation - calm normally, intense on beats
-          const positions = filament.mesh.geometry.attributes.position.array as Float32Array;
-          const basePositions = filament.basePositions;
-
-          for (let i = 0; i < positions.length; i += 3) {
-            const baseX = basePositions[i];
-            const baseY = basePositions[i + 1];
-            const baseZ = basePositions[i + 2];
-
-            // Gentle wave (always present, subtle)
-            const gentleWaveX = Math.sin(time * 0.8 + baseY * 0.5 + filament.floatPhase) * 0.015;
-            const gentleWaveZ = Math.cos(time * 0.6 + baseY * 0.4 + filament.floatPhase) * 0.012;
-
-            // Beat-triggered vibration (intense but brief)
-            const beatVibX = Math.sin(time * vibFreq + i * 0.1) * beatReaction * 0.3;
-            const beatVibZ = Math.cos(time * vibFreq * 1.1 + i * 0.08) * beatReaction * 0.25;
-
-            // Apply deformations while keeping ends anchored
-            const anchorFactor = 1 - Math.pow(Math.abs(baseY) / 7, 2);
-            
-            positions[i] = baseX + (gentleWaveX + beatVibX) * anchorFactor;
-            positions[i + 1] = baseY; // Keep Y stable
-            positions[i + 2] = baseZ + (gentleWaveZ + beatVibZ) * anchorFactor;
+          // Fade in/out
+          if (lifeProgress < 0.1) {
+            mat.opacity = lifeProgress / 0.1 * 0.95;
+          } else if (lifeProgress > 0.85) {
+            mat.opacity = (1 - (lifeProgress - 0.85) / 0.15) * 0.95;
+          } else {
+            mat.opacity = 0.95;
           }
 
-          filament.mesh.geometry.attributes.position.needsUpdate = true;
-          // Emissive reacts to beats
-          mat.emissiveIntensity = 0.08 + beatReaction * 0.4;
+          // Beat-reactive vibration
+          const vibIntensity = beatHit * 0.15 + bass * 0.08;
+          filament.mesh.position.x = Math.sin(time * 15 + filament.phase) * vibIntensity;
+          filament.mesh.position.z = Math.cos(time * 12 + filament.phase) * vibIntensity * 0.5;
+
+          // Rotation with audio
+          filament.mesh.rotation.z = Math.sin(time * filament.speed + filament.phase) * 0.1 * (1 + beatHit);
+          filament.mesh.rotation.x = Math.sin(time * 0.3 + filament.phase) * 0.05;
+
+          // Emissive glow pulses with beat
+          mat.emissiveIntensity = 0.1 + beatHit * 0.4 + bass * 0.2;
+
+          // Scale pulse on beats
+          const scalePulse = 1 + beatHit * 0.15;
+          filament.mesh.scale.set(scalePulse, 1, scalePulse);
         });
 
-        // Remove expired filaments
+        // Remove dead filaments
         filamentsToRemove.forEach((filament) => {
           filamentsGroupRef.current?.remove(filament.mesh);
           filament.mesh.geometry.dispose();
@@ -942,36 +468,6 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
           const idx = filamentsRef.current.indexOf(filament);
           if (idx > -1) filamentsRef.current.splice(idx, 1);
         });
-
-        // Limit max filaments
-        while (filamentsRef.current.length > 60) {
-          const oldest = filamentsRef.current.shift();
-          if (oldest) {
-            filamentsGroupRef.current?.remove(oldest.mesh);
-            oldest.mesh.geometry.dispose();
-            (oldest.mesh.material as THREE.Material).dispose();
-          }
-        }
-
-        // Particles - subtle, react on beats
-        if (particlesRef.current) {
-          const pMat = particlesRef.current.material as THREE.PointsMaterial;
-          pMat.opacity = 0.1 + beatHit * 0.5; // Only visible on beats
-
-          const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-          for (let i = 0; i < positions.length; i += 3) {
-            // Slow drift normally, burst on beats
-            positions[i] += (Math.random() - 0.5) * (0.01 + beatHit * 0.08);
-            positions[i + 1] += (Math.random() - 0.5) * (0.01 + beatHit * 0.1);
-            positions[i + 2] += (Math.random() - 0.5) * 0.005;
-
-            // Boundary reset
-            if (Math.abs(positions[i]) > 3.5) positions[i] = (Math.random() - 0.5) * 5;
-            if (Math.abs(positions[i + 1]) > 3) positions[i + 1] = (Math.random() - 0.5) * 4;
-            if (positions[i + 2] > 3.5 || positions[i + 2] < 0) positions[i + 2] = Math.random() * 2 + 0.5;
-          }
-          particlesRef.current.geometry.attributes.position.needsUpdate = true;
-        }
 
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }
@@ -984,7 +480,7 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
     return () => {
       cancelAnimationFrame(animationIdRef.current);
     };
-  }, [isActive, audioData, textures]);
+  }, [isActive, audioData]);
 
-  return <div data-ev-id="ev_ea2efb6984" ref={containerRef} className="w-full h-full bg-black" />;
+  return <div data-ev-id="ev_5ea342a21d" ref={containerRef} className="absolute inset-0" />;
 }
