@@ -310,17 +310,23 @@ export default function Index() {
         onClose={() => setWorldViewOpen(false)} />
 
 
-      {/* ARTWORKS trigger - HUGE hover zone covering top 40% of screen */}
+      {/* ARTWORK trigger - Hover zone covers top 40%, but click only near word */}
       {systemMode === 'idle' && !worldViewOpen &&
       <>
-        {/* Desktop: massive hover zone at top */}
+        {/* Desktop: large hover zone at top for visibility */}
         <div data-ev-id="ev_cbc36cbee6"
-        className="fixed top-0 left-0 right-0 h-[40vh] z-20 cursor-pointer hidden md:flex items-start justify-center pt-8"
+        className="fixed top-0 left-0 right-0 h-[40vh] z-20 hidden md:flex items-start justify-center pt-8 pointer-events-none"
         onMouseEnter={() => setArtworksHovered(true)}
-        onMouseLeave={() => setArtworksHovered(false)}
-        onClick={() => setArtworksOpen(true)}>
-            <span data-ev-id="ev_d8f3cf4ea0"
-          className={`font-mono text-[11px] tracking-[0.5em] transition-all duration-300 ${
+        onMouseLeave={() => setArtworksHovered(false)}>
+          {/* Invisible hover detector covering full area */}
+          <div data-ev-id="ev_645647b9e9"
+          className="absolute top-0 left-0 right-0 h-full pointer-events-auto"
+          onMouseEnter={() => setArtworksHovered(true)}
+          onMouseLeave={() => setArtworksHovered(false)} />
+
+          {/* Clickable area only near the word */}
+          <span data-ev-id="ev_7bfd6617cd"
+          className={`font-mono text-[11px] tracking-[0.5em] transition-all duration-300 cursor-pointer pointer-events-auto px-12 py-6 ${
           artworksHovered ?
           'text-white opacity-100 scale-105' :
           'text-white/0 opacity-0 scale-100'}`
@@ -329,22 +335,24 @@ export default function Index() {
             textShadow: artworksHovered ?
             '0 0 15px #00ffcc, 0 0 30px #00ffcc, 0 0 50px #00ffcc, 0 0 80px #00ffcc' :
             'none'
-          }}>
-              ARTWORKS
+          }}
+          onClick={() => setArtworksOpen(true)}>
+              ARTWORK
             </span>
           </div>
         
-        {/* Mobile: swipe hint at top - also clickable */}
-        <div data-ev-id="ev_fc0a482e0f"
-        className="fixed top-0 left-0 right-0 h-24 z-20 md:hidden flex items-center justify-center"
-        onClick={() => setArtworksOpen(true)}>
-          <div data-ev-id="ev_3514f51e38" className="flex flex-col items-center gap-1">
-            <span data-ev-id="ev_8666c605b7" className="font-mono text-[8px] text-white/40 tracking-[0.3em] animate-pulse">
+        {/* Mobile: swipe hint at top - clickable area smaller */}
+        <div data-ev-id="ev_46b463ac39"
+        className="fixed top-0 left-0 right-0 h-20 z-20 md:hidden flex items-center justify-center">
+          <div data-ev-id="ev_e6ffeebe8b"
+          className="flex flex-col items-center gap-1 px-8 py-4 cursor-pointer"
+          onClick={() => setArtworksOpen(true)}>
+            <span data-ev-id="ev_566ee89749" className="font-mono text-[8px] text-white/40 tracking-[0.3em] animate-pulse">
               ↑ SWIPE UP
             </span>
-            <span data-ev-id="ev_b6533f5189" className="font-mono text-[10px] tracking-[0.4em]"
+            <span data-ev-id="ev_c44ee0a54d" className="font-mono text-[10px] tracking-[0.4em]"
             style={{ color: '#00ffcc', textShadow: '0 0 10px #00ffcc' }}>
-              ARTWORKS
+              ARTWORK
             </span>
           </div>
         </div>

@@ -34,6 +34,14 @@ interface ThickFilament {
   phase: number;
   speed: number;
   curveStyle: 'spiral' | 'wave' | 'organic';
+  // Random movement parameters - unique per filament
+  randomSeed: number;
+  driftX: number;
+  driftY: number;
+  driftZ: number;
+  rotSpeed: number;
+  vibFreq: number;
+  wobble: number;
 }
 
 export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMeshProps) {
@@ -342,19 +350,29 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
         basePositions: new Float32Array(geometry.attributes.position.array),
         color,
         spawnTime: timeRef.current,
-        lifespan: 8 + Math.random() * 6,
+        lifespan: 6 + Math.random() * 10, // More varied lifespan
         thickness,
         phase: Math.random() * Math.PI * 2,
-        speed: 0.3 + Math.random() * 0.5,
-        curveStyle
+        speed: 0.2 + Math.random() * 0.8, // More varied speed
+        curveStyle,
+        // RANDOM unique parameters per filament
+        randomSeed: Math.random() * 1000,
+        driftX: (Math.random() - 0.5) * 0.02,
+        driftY: (Math.random() - 0.5) * 0.015,
+        driftZ: (Math.random() - 0.5) * 0.01,
+        rotSpeed: (Math.random() - 0.5) * 0.3,
+        vibFreq: 5 + Math.random() * 25, // Very varied frequencies
+        wobble: Math.random() * 0.3
       });
 
       totalFilamentsSpawnedRef.current++;
     };
 
-    // Spawn initial filaments
-    for (let i = 0; i < 15; i++) {
-      spawnFilament();
+    // Spawn initial filaments at RANDOM times
+    const initialCount = 10 + Math.floor(Math.random() * 10);
+    for (let i = 0; i < initialCount; i++) {
+      // Stagger spawn times randomly
+      setTimeout(() => spawnFilament(), Math.random() * 500);
     }
 
     const animate = () => {
@@ -408,15 +426,25 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
         faceGroupRef.current.rotation.y = Math.sin(time * 0.15) * 0.05;
         faceGroupRef.current.rotation.x = Math.sin(time * 0.1) * 0.03;
 
-        // === SPAWN MORE FILAMENTS AS AUDIO PROGRESSES ===
+        // === SPAWN FILAMENTS RANDOMLY based on audio ===
         const timeSinceSpawn = time - lastSpawnTimeRef.current;
-        const spawnRate = 0.15 - volume * 0.08; // Faster spawn with louder audio
-        const maxFilaments = 60 + Math.floor(totalFilamentsSpawnedRef.current * 0.1); // Increases over time
+        // Random spawn rate that varies
+        const baseSpawnRate = 0.1 + Math.random() * 0.15;
+        const spawnRate = baseSpawnRate - volume * 0.06;
+        const maxFilaments = 50 + Math.floor(Math.random() * 30);
 
-        if (timeSinceSpawn > spawnRate && filamentsRef.current.length < maxFilaments) {
+        // Random chance to spawn even without beat
+        const randomSpawnChance = Math.random() < 0.02;
+        
+        if ((timeSinceSpawn > spawnRate || randomSpawnChance) && filamentsRef.current.length < maxFilaments) {
           spawnFilament();
-          if (beatHit > 0.3) spawnFilament(); // Extra on beats
-          if (beatHit > 0.6) spawnFilament(); // Even more on big beats
+          // Random extra spawns on beats
+          if (beatHit > 0.25 && Math.random() > 0.4) spawnFilament();
+          if (beatHit > 0.5 && Math.random() > 0.5) spawnFilament();
+          if (beatHit > 0.7 && Math.random() > 0.6) {
+            spawnFilament();
+            spawnFilament();
+          }
           lastSpawnTimeRef.current = time;
         }
 
@@ -443,14 +471,29 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
             mat.opacity = 0.95;
           }
 
-          // Beat-reactive vibration
-          const vibIntensity = beatHit * 0.15 + bass * 0.08;
-          filament.mesh.position.x = Math.sin(time * 15 + filament.phase) * vibIntensity;
-          filament.mesh.position.z = Math.cos(time * 12 + filament.phase) * vibIntensity * 0.5;
+          // RANDOM movement - each filament moves uniquely, no sequence
+          const seed = filament.randomSeed;
+          const uniqueTime = time + seed;
+          
+          // Random drift that accumulates over time
+          filament.mesh.position.x += filament.driftX * (1 + beatHit * 2);
+          filament.mesh.position.y += filament.driftY;
+          filament.mesh.position.z += filament.driftZ;
+          
+          // Beat-reactive vibration with RANDOM frequency per filament
+          const vibIntensity = beatHit * 0.25 + bass * 0.12;
+          filament.mesh.position.x += Math.sin(uniqueTime * filament.vibFreq) * vibIntensity * (0.5 + Math.random() * 0.5);
+          filament.mesh.position.z += Math.cos(uniqueTime * filament.vibFreq * 0.8) * vibIntensity * 0.4;
+          
+          // Random wobble
+          filament.mesh.position.x += Math.sin(uniqueTime * 3 + seed) * filament.wobble * (1 + beatHit);
+          filament.mesh.position.y += Math.cos(uniqueTime * 2.5 + seed * 0.7) * filament.wobble * 0.5;
 
-          // Rotation with audio
-          filament.mesh.rotation.z = Math.sin(time * filament.speed + filament.phase) * 0.1 * (1 + beatHit);
-          filament.mesh.rotation.x = Math.sin(time * 0.3 + filament.phase) * 0.05;
+          // RANDOM rotation - unique per filament
+          const rotSeed = filament.randomSeed * 0.001;
+          filament.mesh.rotation.z += filament.rotSpeed * (0.5 + beatHit * 2) * 0.016;
+          filament.mesh.rotation.x = Math.sin(time * filament.speed + rotSeed) * 0.08 * (1 + beatHit);
+          filament.mesh.rotation.y = Math.cos(time * filament.speed * 0.7 + rotSeed) * 0.05;
 
           // Emissive glow pulses with beat
           mat.emissiveIntensity = 0.1 + beatHit * 0.4 + bass * 0.2;

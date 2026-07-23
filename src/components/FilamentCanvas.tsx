@@ -239,19 +239,19 @@ export function FilamentCanvas({
     scene.add(filamentLine);
     filamentLineRef.current = filamentLine;
 
-    // === TUBE MATERIAL (3D mode - subtle, tenue rubber/latex look) ===
+    // === TUBE MATERIAL (3D mode - physical rubber/latex look) ===
     const tubeMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x888899,
-      metalness: 0.08,
-      roughness: 0.45,
-      clearcoat: 0.5,
-      clearcoatRoughness: 0.3,
-      reflectivity: 0.25,
-      sheen: 0.3,
-      sheenRoughness: 0.4,
-      sheenColor: new THREE.Color(0x333344),
-      emissive: 0x080810,
-      emissiveIntensity: 0.08,
+      color: 0x2a2a35,
+      metalness: 0.05,
+      roughness: 0.55,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.4,
+      reflectivity: 0.15,
+      sheen: 0.2,
+      sheenRoughness: 0.5,
+      sheenColor: new THREE.Color(0x222230),
+      emissive: 0x050508,
+      emissiveIntensity: 0.05,
       transparent: true,
       opacity: 1
     });
@@ -556,37 +556,31 @@ export function FilamentCanvas({
         lineMat.opacity = sentiment.type === 'chaos' ? 1 - sentiment.intensity * 0.3 : 1;
         lineMat.transparent = true;
 
-        // Update tube for 3D mode with ELECTRIC CURRENT effect
+        // Update tube for 3D mode - PHYSICAL RUBBER texture
         if (is3D && curvePoints.length >= 3) {
           // Dispose old geometry
           filamentTube.geometry.dispose();
           
-          // Create new tube from curve points
+          // Create new tube from curve points - THICKER on click
           const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.5);
-          const tubeRadius = 0.05 + mode3DIntensity * 0.08;
-          const newTubeGeometry = new THREE.TubeGeometry(curve, 120, tubeRadius, 24, false);
+          const tubeRadius = 0.06 + mode3DIntensity * 0.12; // More realistic thickening
+          const newTubeGeometry = new THREE.TubeGeometry(curve, 100, tubeRadius, 24, false);
           filamentTube.geometry = newTubeGeometry;
           
-          // ELECTRIC CURRENT effect - illuminates based on cursor Y position
-          const cursorYRatio = mousePosition.y / window.innerHeight;
-          const electricPulse = Math.sin(time * 15) * 0.3 + 0.7;
-          const currentIntensity = mode3DIntensity * electricPulse;
-          
-          // Color shifts based on where cursor is (electric current flowing)
-          const electricColor = new THREE.Color();
-          electricColor.setHSL(0.5 + cursorYRatio * 0.15, 0.8, 0.6 + currentIntensity * 0.3);
-          
-          // Update tube material - REALISTIC 3D with electric glow
+          // Update tube material - PHYSICAL RUBBER/LATEX look (not white/electric)
           const tubeMat = tubeMaterialRef.current;
           if (tubeMat) {
-            tubeMat.color = filamentColor.clone().lerp(electricColor, currentIntensity * 0.5);
-            tubeMat.emissive = electricColor;
-            tubeMat.emissiveIntensity = 0.2 + currentIntensity * 0.6;
-            tubeMat.clearcoat = 0.8 + currentIntensity * 0.2;
-            tubeMat.clearcoatRoughness = 0.1;
-            tubeMat.metalness = 0.1 + currentIntensity * 0.15;
-            tubeMat.roughness = 0.25 - currentIntensity * 0.1;
-            tubeMat.opacity = 0.9 + mode3DIntensity * 0.1;
+            // Dark rubber base color that subtly takes on filament color
+            const baseColor = new THREE.Color(0x1a1a22);
+            tubeMat.color = baseColor.lerp(filamentColor.clone().multiplyScalar(0.3), mode3DIntensity * 0.4);
+            tubeMat.emissive = filamentColor.clone().multiplyScalar(0.08);
+            tubeMat.emissiveIntensity = 0.03 + mode3DIntensity * 0.08;
+            tubeMat.clearcoat = 0.25 + mode3DIntensity * 0.15;
+            tubeMat.clearcoatRoughness = 0.4;
+            tubeMat.metalness = 0.03;
+            tubeMat.roughness = 0.6 - mode3DIntensity * 0.1;
+            tubeMat.sheen = 0.15 + mode3DIntensity * 0.1;
+            tubeMat.opacity = 0.95;
           }
 
           filamentTube.rotation.z = rotationRef.current;
