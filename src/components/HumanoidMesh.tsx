@@ -44,6 +44,19 @@ interface ThickFilament {
   wobble: number;
 }
 
+// Magical crystal symbols inside filaments
+interface MagicCrystal {
+  mesh: THREE.Mesh;
+  spawnTime: number;
+  lifespan: number;
+  parentFilament: THREE.Mesh;
+  rotSpeed: THREE.Vector3;
+  scale: number;
+}
+
+// Magic symbol shapes
+const MAGIC_SYMBOLS = ['triangle', 'diamond', 'star', 'cross', 'hexagon', 'crescent'] as const;
+
 export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMeshProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -58,6 +71,9 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
   const beatIntensityRef = useRef(0);
   const prevMidRef = useRef(0);
   const totalFilamentsSpawnedRef = useRef(0);
+  const crystalsRef = useRef<MagicCrystal[]>([]);
+  const crystalsGroupRef = useRef<THREE.Group | null>(null);
+  const audioActiveRef = useRef(false);
   const [generationKey] = useState(() => Math.random());
 
   // Initialize scene
@@ -241,6 +257,11 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
     scene.add(filamentsGroup);
     filamentsGroupRef.current = filamentsGroup;
 
+    // === CRYSTALS GROUP (magic symbols) ===
+    const crystalsGroup = new THREE.Group();
+    scene.add(crystalsGroup);
+    crystalsGroupRef.current = crystalsGroup;
+
     // Cleanup
     const container = containerRef.current;
     return () => {
@@ -250,6 +271,11 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
         (f.mesh.material as THREE.Material).dispose();
       });
       filamentsRef.current = [];
+      crystalsRef.current.forEach((c) => {
+        c.mesh.geometry.dispose();
+        (c.mesh.material as THREE.Material).dispose();
+      });
+      crystalsRef.current = [];
       if (container && renderer.domElement) {
         container.removeChild(renderer.domElement);
       }
@@ -368,6 +394,127 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
       totalFilamentsSpawnedRef.current++;
     };
 
+    // Create magic symbol geometry
+    const createSymbolGeometry = (type: typeof MAGIC_SYMBOLS[number], size: number): THREE.BufferGeometry => {
+      switch (type) {
+        case 'triangle': {
+          const shape = new THREE.Shape();
+          shape.moveTo(0, size);
+          shape.lineTo(-size * 0.866, -size * 0.5);
+          shape.lineTo(size * 0.866, -size * 0.5);
+          shape.lineTo(0, size);
+          return new THREE.ShapeGeometry(shape);
+        }
+        case 'diamond': {
+          const shape = new THREE.Shape();
+          shape.moveTo(0, size);
+          shape.lineTo(-size * 0.6, 0);
+          shape.lineTo(0, -size);
+          shape.lineTo(size * 0.6, 0);
+          shape.lineTo(0, size);
+          return new THREE.ShapeGeometry(shape);
+        }
+        case 'star': {
+          const shape = new THREE.Shape();
+          for (let i = 0; i < 5; i++) {
+            const outerAngle = (i * 72 - 90) * Math.PI / 180;
+            const innerAngle = ((i * 72) + 36 - 90) * Math.PI / 180;
+            const outerX = Math.cos(outerAngle) * size;
+            const outerY = Math.sin(outerAngle) * size;
+            const innerX = Math.cos(innerAngle) * size * 0.4;
+            const innerY = Math.sin(innerAngle) * size * 0.4;
+            if (i === 0) shape.moveTo(outerX, outerY);
+            else shape.lineTo(outerX, outerY);
+            shape.lineTo(innerX, innerY);
+          }
+          shape.closePath();
+          return new THREE.ShapeGeometry(shape);
+        }
+        case 'cross': {
+          const shape = new THREE.Shape();
+          const w = size * 0.25;
+          shape.moveTo(-w, size);
+          shape.lineTo(w, size);
+          shape.lineTo(w, w);
+          shape.lineTo(size, w);
+          shape.lineTo(size, -w);
+          shape.lineTo(w, -w);
+          shape.lineTo(w, -size);
+          shape.lineTo(-w, -size);
+          shape.lineTo(-w, -w);
+          shape.lineTo(-size, -w);
+          shape.lineTo(-size, w);
+          shape.lineTo(-w, w);
+          shape.closePath();
+          return new THREE.ShapeGeometry(shape);
+        }
+        case 'hexagon': {
+          const shape = new THREE.Shape();
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * 60 - 30) * Math.PI / 180;
+            const x = Math.cos(angle) * size;
+            const y = Math.sin(angle) * size;
+            if (i === 0) shape.moveTo(x, y);
+            else shape.lineTo(x, y);
+          }
+          shape.closePath();
+          return new THREE.ShapeGeometry(shape);
+        }
+        case 'crescent': {
+          const shape = new THREE.Shape();
+          shape.absarc(0, 0, size, 0.3, Math.PI * 2 - 0.3, false);
+          shape.absarc(size * 0.3, 0, size * 0.7, Math.PI * 2 - 0.5, 0.5, true);
+          return new THREE.ShapeGeometry(shape);
+        }
+        default:
+          return new THREE.CircleGeometry(size, 8);
+      }
+    };
+
+    // Spawn crystal inside a filament
+    const spawnCrystal = (parentFilament: THREE.Mesh, color: THREE.Color) => {
+      if (!crystalsGroupRef.current) return;
+
+      const symbolType = MAGIC_SYMBOLS[Math.floor(Math.random() * MAGIC_SYMBOLS.length)];
+      const size = 0.05 + Math.random() * 0.1;
+      const geometry = createSymbolGeometry(symbolType, size);
+
+      // Glowing crystal material
+      const material = new THREE.MeshBasicMaterial({
+        color: color.clone().multiplyScalar(1.5),
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+
+      // Position inside/near the filament
+      const parentPos = parentFilament.position.clone();
+      const randomOffset = new THREE.Vector3(
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 2,
+        (Math.random() - 0.5) * 0.5
+      );
+      mesh.position.copy(parentPos.add(randomOffset));
+
+      crystalsGroupRef.current.add(mesh);
+
+      crystalsRef.current.push({
+        mesh,
+        spawnTime: timeRef.current,
+        lifespan: 0.5 + Math.random() * 1.5,
+        parentFilament,
+        rotSpeed: new THREE.Vector3(
+          (Math.random() - 0.5) * 5,
+          (Math.random() - 0.5) * 5,
+          (Math.random() - 0.5) * 5
+        ),
+        scale: size
+      });
+    };
+
     // Spawn initial filaments at RANDOM times
     const initialCount = 10 + Math.floor(Math.random() * 10);
     for (let i = 0; i < initialCount; i++) {
@@ -394,6 +541,19 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
           beatIntensityRef.current = Math.min(1, midDelta * 3);
         }
         const beatHit = beatIntensityRef.current;
+
+        // Detect if audio is active (visual stops when audio stops)
+        const audioIsActive = volume > 0.01 || bass > 0.01 || mid > 0.01;
+        audioActiveRef.current = audioIsActive;
+
+        // === SPAWN CRYSTALS ON BEATS ===
+        if (beatHit > 0.3 && filamentsRef.current.length > 0) {
+          const numCrystals = Math.floor(beatHit * 8) + Math.floor(Math.random() * 4);
+          for (let i = 0; i < numCrystals; i++) {
+            const randomFilament = filamentsRef.current[Math.floor(Math.random() * filamentsRef.current.length)];
+            spawnCrystal(randomFilament.mesh, randomFilament.color);
+          }
+        }
 
         // === SINISTER EYES ANIMATION ===
         const faceTyped = faceGroupRef.current as THREE.Group & {leftEye?: THREE.Mesh;rightEye?: THREE.Mesh;leftGlow?: THREE.Mesh;rightGlow?: THREE.Mesh;};
@@ -511,6 +671,74 @@ export function HumanoidMesh({ audioData, isActive, onCanvasReady }: HumanoidMes
           const idx = filamentsRef.current.indexOf(filament);
           if (idx > -1) filamentsRef.current.splice(idx, 1);
         });
+
+        // === ANIMATE MAGIC CRYSTALS ===
+        const crystalsToRemove: MagicCrystal[] = [];
+        
+        crystalsRef.current.forEach((crystal) => {
+          const age = time - crystal.spawnTime;
+          const lifeProgress = age / crystal.lifespan;
+
+          if (lifeProgress >= 1) {
+            crystalsToRemove.push(crystal);
+            return;
+          }
+
+          // Rotate wildly
+          crystal.mesh.rotation.x += crystal.rotSpeed.x * 0.016;
+          crystal.mesh.rotation.y += crystal.rotSpeed.y * 0.016;
+          crystal.mesh.rotation.z += crystal.rotSpeed.z * 0.016;
+
+          // Float upward and outward
+          crystal.mesh.position.y += 0.02 + beatHit * 0.03;
+          crystal.mesh.position.x += (Math.random() - 0.5) * 0.02;
+          crystal.mesh.position.z += (Math.random() - 0.5) * 0.02;
+
+          // Scale animation: grow in, shrink out
+          let scaleMult = 1;
+          if (lifeProgress < 0.2) {
+            scaleMult = lifeProgress / 0.2;
+          } else if (lifeProgress > 0.7) {
+            scaleMult = 1 - (lifeProgress - 0.7) / 0.3;
+          }
+          const scale = crystal.scale * scaleMult * (1 + beatHit * 0.5);
+          crystal.mesh.scale.set(scale, scale, scale);
+
+          // Fade out
+          const mat = crystal.mesh.material as THREE.MeshBasicMaterial;
+          mat.opacity = (1 - lifeProgress) * 0.9;
+        });
+
+        // Remove dead crystals
+        crystalsToRemove.forEach((crystal) => {
+          crystalsGroupRef.current?.remove(crystal.mesh);
+          crystal.mesh.geometry.dispose();
+          (crystal.mesh.material as THREE.Material).dispose();
+          const idx = crystalsRef.current.indexOf(crystal);
+          if (idx > -1) crystalsRef.current.splice(idx, 1);
+        });
+
+        // === VISUAL STOPS WHEN AUDIO STOPS ===
+        // Fade all elements when no audio
+        if (!audioIsActive) {
+          // Fade filaments
+          filamentsRef.current.forEach((filament) => {
+            const mat = filament.mesh.material as THREE.MeshPhysicalMaterial;
+            mat.opacity = Math.max(0, mat.opacity - 0.02);
+          });
+          // Fade crystals
+          crystalsRef.current.forEach((crystal) => {
+            const mat = crystal.mesh.material as THREE.MeshBasicMaterial;
+            mat.opacity = Math.max(0, mat.opacity - 0.05);
+          });
+          // Fade face
+          if (faceTyped.leftGlow) {
+            (faceTyped.leftGlow.material as THREE.MeshBasicMaterial).opacity *= 0.95;
+          }
+          if (faceTyped.rightGlow) {
+            (faceTyped.rightGlow.material as THREE.MeshBasicMaterial).opacity *= 0.95;
+          }
+        }
 
         rendererRef.current.render(sceneRef.current, cameraRef.current);
       }

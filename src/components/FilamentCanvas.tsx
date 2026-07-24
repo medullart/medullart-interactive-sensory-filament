@@ -239,21 +239,22 @@ export function FilamentCanvas({
     scene.add(filamentLine);
     filamentLineRef.current = filamentLine;
 
-    // === TUBE MATERIAL (3D mode - physical rubber/latex look) ===
+    // === TUBE MATERIAL (3D mode - smooth dark silicone like reference) ===
     const tubeMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x2a2a35,
-      metalness: 0.05,
-      roughness: 0.55,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.4,
-      reflectivity: 0.15,
-      sheen: 0.2,
-      sheenRoughness: 0.5,
-      sheenColor: new THREE.Color(0x222230),
-      emissive: 0x050508,
-      emissiveIntensity: 0.05,
-      transparent: true,
-      opacity: 1
+      color: 0x1a1a20, // Very dark charcoal
+      metalness: 0.0,
+      roughness: 0.7, // Matte silicone look
+      clearcoat: 0.15, // Subtle sheen
+      clearcoatRoughness: 0.6,
+      reflectivity: 0.08,
+      sheen: 0.1,
+      sheenRoughness: 0.7,
+      sheenColor: new THREE.Color(0x303040),
+      emissive: 0x000000,
+      emissiveIntensity: 0,
+      transparent: false,
+      opacity: 1,
+      side: THREE.DoubleSide
     });
     tubeMaterialRef.current = tubeMaterial;
 
@@ -556,35 +557,35 @@ export function FilamentCanvas({
         lineMat.opacity = sentiment.type === 'chaos' ? 1 - sentiment.intensity * 0.3 : 1;
         lineMat.transparent = true;
 
-        // Update tube for 3D mode - PHYSICAL RUBBER texture
+        // Update tube for 3D mode - SMOOTH DARK SILICONE like reference image
         if (is3D && curvePoints.length >= 3) {
           // Dispose old geometry
           filamentTube.geometry.dispose();
           
-          // Create new tube from curve points - THICKER on click
-          const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.5);
-          const tubeRadius = 0.06 + mode3DIntensity * 0.12; // More realistic thickening
-          const newTubeGeometry = new THREE.TubeGeometry(curve, 100, tubeRadius, 24, false);
+          // Create new tube - THICK smooth silicone tube
+          const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.7);
+          const tubeRadius = 0.08 + mode3DIntensity * 0.18; // Thick realistic tube
+          const newTubeGeometry = new THREE.TubeGeometry(curve, 120, tubeRadius, 32, false);
           filamentTube.geometry = newTubeGeometry;
           
-          // Update tube material - PHYSICAL RUBBER/LATEX look (not white/electric)
+          // Update tube material - DARK MATTE SILICONE (like reference)
           const tubeMat = tubeMaterialRef.current;
           if (tubeMat) {
-            // Dark rubber base color that subtly takes on filament color
-            const baseColor = new THREE.Color(0x1a1a22);
-            tubeMat.color = baseColor.lerp(filamentColor.clone().multiplyScalar(0.3), mode3DIntensity * 0.4);
-            tubeMat.emissive = filamentColor.clone().multiplyScalar(0.08);
-            tubeMat.emissiveIntensity = 0.03 + mode3DIntensity * 0.08;
-            tubeMat.clearcoat = 0.25 + mode3DIntensity * 0.15;
-            tubeMat.clearcoatRoughness = 0.4;
-            tubeMat.metalness = 0.03;
-            tubeMat.roughness = 0.6 - mode3DIntensity * 0.1;
-            tubeMat.sheen = 0.15 + mode3DIntensity * 0.1;
-            tubeMat.opacity = 0.95;
+            // Very dark charcoal - almost black with subtle gray tint
+            tubeMat.color = new THREE.Color(0x18181e);
+            tubeMat.emissive = new THREE.Color(0x000000);
+            tubeMat.emissiveIntensity = 0;
+            tubeMat.clearcoat = 0.12 + mode3DIntensity * 0.08; // Very subtle sheen
+            tubeMat.clearcoatRoughness = 0.7;
+            tubeMat.metalness = 0;
+            tubeMat.roughness = 0.75; // Matte silicone
+            tubeMat.sheen = 0.08;
+            tubeMat.sheenRoughness = 0.8;
+            tubeMat.sheenColor = new THREE.Color(0x2a2a35);
           }
 
           filamentTube.rotation.z = rotationRef.current;
-          filamentTube.rotation.x = Math.sin(time * 0.3) * 0.2;
+          filamentTube.rotation.x = Math.sin(time * 0.3) * 0.15;
         }
 
         // Toggle visibility based on 3D mode
