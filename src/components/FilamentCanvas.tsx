@@ -239,17 +239,17 @@ export function FilamentCanvas({
     scene.add(filamentLine);
     filamentLineRef.current = filamentLine;
 
-    // === TUBE MATERIAL (3D mode - smooth dark silicone like reference) ===
+    // === TUBE MATERIAL (3D mode - light gray solid, same as filament line) ===
     const tubeMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x1a1a20, // Very dark charcoal
+      color: 0x9a9aaa, // Light grayish - matches filament line
       metalness: 0.0,
-      roughness: 0.7, // Matte silicone look
-      clearcoat: 0.15, // Subtle sheen
-      clearcoatRoughness: 0.6,
-      reflectivity: 0.08,
-      sheen: 0.1,
-      sheenRoughness: 0.7,
-      sheenColor: new THREE.Color(0x303040),
+      roughness: 0.6, // Slightly matte but visible
+      clearcoat: 0.08, // Very subtle sheen
+      clearcoatRoughness: 0.7,
+      reflectivity: 0.05,
+      sheen: 0.05,
+      sheenRoughness: 0.8,
+      sheenColor: new THREE.Color(0xaaaabc),
       emissive: 0x000000,
       emissiveIntensity: 0,
       transparent: false,
@@ -557,35 +557,35 @@ export function FilamentCanvas({
         lineMat.opacity = sentiment.type === 'chaos' ? 1 - sentiment.intensity * 0.3 : 1;
         lineMat.transparent = true;
 
-        // Update tube for 3D mode - SMOOTH DARK SILICONE like reference image
+        // Update tube for 3D mode - LIGHT GRAY SOLID like the filament line
         if (is3D && curvePoints.length >= 3) {
           // Dispose old geometry
           filamentTube.geometry.dispose();
           
-          // Create new tube - THICK smooth silicone tube
+          // Create new tube - thickened version of the line
           const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.7);
-          const tubeRadius = 0.08 + mode3DIntensity * 0.18; // Thick realistic tube
+          const tubeRadius = 0.06 + mode3DIntensity * 0.14; // Solid thickening
           const newTubeGeometry = new THREE.TubeGeometry(curve, 120, tubeRadius, 32, false);
           filamentTube.geometry = newTubeGeometry;
           
-          // Update tube material - DARK MATTE SILICONE (like reference)
+          // Update tube material - LIGHT GRAY matching filament color
           const tubeMat = tubeMaterialRef.current;
           if (tubeMat) {
-            // Very dark charcoal - almost black with subtle gray tint
-            tubeMat.color = new THREE.Color(0x18181e);
-            tubeMat.emissive = new THREE.Color(0x000000);
-            tubeMat.emissiveIntensity = 0;
-            tubeMat.clearcoat = 0.12 + mode3DIntensity * 0.08; // Very subtle sheen
-            tubeMat.clearcoatRoughness = 0.7;
+            // Light gray - same tone as the white-gray filament line
+            tubeMat.color = new THREE.Color(0x8a8a9a);
+            tubeMat.emissive = new THREE.Color(0x252530);
+            tubeMat.emissiveIntensity = 0.1; // Subtle inner glow for visibility
+            tubeMat.clearcoat = 0.05 + mode3DIntensity * 0.05;
+            tubeMat.clearcoatRoughness = 0.8;
             tubeMat.metalness = 0;
-            tubeMat.roughness = 0.75; // Matte silicone
-            tubeMat.sheen = 0.08;
-            tubeMat.sheenRoughness = 0.8;
-            tubeMat.sheenColor = new THREE.Color(0x2a2a35);
+            tubeMat.roughness = 0.65; // Solid matte look
+            tubeMat.sheen = 0.03;
+            tubeMat.sheenRoughness = 0.9;
+            tubeMat.sheenColor = new THREE.Color(0x9a9aaa);
           }
 
           filamentTube.rotation.z = rotationRef.current;
-          filamentTube.rotation.x = Math.sin(time * 0.3) * 0.15;
+          filamentTube.rotation.x = Math.sin(time * 0.3) * 0.1;
         }
 
         // Toggle visibility based on 3D mode
