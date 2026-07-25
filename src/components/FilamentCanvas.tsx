@@ -200,30 +200,38 @@ export function FilamentCanvas({
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // === LIGHTING for 3D mode - subtle, tenue and realistic ===
-    const ambientLight = new THREE.AmbientLight(0x0a0a12, 0.25);
+    // === IMPROVED 3D LIGHTING - cinematic, rubber/latex visible ===
+    const ambientLight = new THREE.AmbientLight(0x1a1a2a, 0.4);
     scene.add(ambientLight);
 
-    const frontLight = new THREE.DirectionalLight(0xccccdd, 0.3);
-    frontLight.position.set(0, 0, 5);
-    scene.add(frontLight);
+    // Strong key light from front-right for 3D definition
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    keyLight.position.set(2, 2, 5);
+    scene.add(keyLight);
 
-    const blueRimLight = new THREE.PointLight(0x3366aa, 0.4, 10);
-    blueRimLight.position.set(-2, 0.5, 1.5);
-    scene.add(blueRimLight);
+    // Fill light from left
+    const fillLight = new THREE.DirectionalLight(0x8888aa, 0.5);
+    fillLight.position.set(-3, 0, 4);
+    scene.add(fillLight);
 
-    const subtleRimLight = new THREE.PointLight(0x444455, 0.3, 10);
-    subtleRimLight.position.set(2, -0.5, 1.5);
-    scene.add(subtleRimLight);
+    // Rim lights for edge definition
+    const rimLightLeft = new THREE.PointLight(0x4466aa, 0.7, 12);
+    rimLightLeft.position.set(-3, 1, 2);
+    scene.add(rimLightLeft);
 
-    const topLight = new THREE.DirectionalLight(0x222233, 0.2);
-    topLight.position.set(0, 4, 2);
+    const rimLightRight = new THREE.PointLight(0x6644aa, 0.6, 12);
+    rimLightRight.position.set(3, -1, 2);
+    scene.add(rimLightRight);
+
+    // Top light for volume
+    const topLight = new THREE.DirectionalLight(0xaaaacc, 0.4);
+    topLight.position.set(0, 5, 3);
     scene.add(topLight);
 
-    // Very subtle back rim for depth
-    const backRimLight = new THREE.PointLight(0x111122, 0.2, 6);
-    backRimLight.position.set(0, 0, -2);
-    scene.add(backRimLight);
+    // Bottom fill for underside visibility
+    const bottomLight = new THREE.PointLight(0x333344, 0.3, 8);
+    bottomLight.position.set(0, -3, 2);
+    scene.add(bottomLight);
 
     // === LINE FILAMENT (2D mode) ===
     const lineGeometry = new THREE.BufferGeometry();
@@ -239,22 +247,23 @@ export function FilamentCanvas({
     scene.add(filamentLine);
     filamentLineRef.current = filamentLine;
 
-    // === TUBE MATERIAL (3D mode - light gray solid, same as filament line) ===
+    // === TUBE MATERIAL (3D mode - rubber/latex with cinematic lighting) ===
     const tubeMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x9a9aaa, // Light grayish - matches filament line
-      metalness: 0.0,
-      roughness: 0.6, // Slightly matte but visible
-      clearcoat: 0.08, // Very subtle sheen
-      clearcoatRoughness: 0.7,
-      reflectivity: 0.05,
-      sheen: 0.05,
-      sheenRoughness: 0.8,
-      sheenColor: new THREE.Color(0xaaaabc),
-      emissive: 0x000000,
-      emissiveIntensity: 0,
-      transparent: false,
-      opacity: 1,
-      side: THREE.DoubleSide
+      color: 0x4a4a5a, // Medium gray base
+      metalness: 0.1,
+      roughness: 0.35, // Smooth rubber look
+      clearcoat: 0.8, // Glossy clearcoat for 3D pop
+      clearcoatRoughness: 0.15,
+      reflectivity: 0.5,
+      sheen: 0.4,
+      sheenRoughness: 0.3,
+      sheenColor: new THREE.Color(0x8888aa),
+      emissive: 0x111118,
+      emissiveIntensity: 0.15,
+      transparent: true,
+      opacity: 0.98,
+      side: THREE.DoubleSide,
+      envMapIntensity: 0.5
     });
     tubeMaterialRef.current = tubeMaterial;
 
@@ -557,35 +566,37 @@ export function FilamentCanvas({
         lineMat.opacity = sentiment.type === 'chaos' ? 1 - sentiment.intensity * 0.3 : 1;
         lineMat.transparent = true;
 
-        // Update tube for 3D mode - LIGHT GRAY SOLID like the filament line
+        // Update tube for 3D mode - RUBBER/LATEX with cinematic lighting
         if (is3D && curvePoints.length >= 3) {
           // Dispose old geometry
           filamentTube.geometry.dispose();
           
-          // Create new tube - thickened version of the line
-          const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.7);
-          const tubeRadius = 0.06 + mode3DIntensity * 0.14; // Solid thickening
+          // Create thick 3D tube - visible rubber/latex look
+          const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.6);
+          const tubeRadius = 0.08 + mode3DIntensity * 0.18; // Thick 3D tube
           const newTubeGeometry = new THREE.TubeGeometry(curve, 120, tubeRadius, 32, false);
           filamentTube.geometry = newTubeGeometry;
           
-          // Update tube material - LIGHT GRAY matching filament color
+          // Update tube material - CINEMATIC RUBBER look
           const tubeMat = tubeMaterialRef.current;
           if (tubeMat) {
-            // Light gray - same tone as the white-gray filament line
-            tubeMat.color = new THREE.Color(0x8a8a9a);
-            tubeMat.emissive = new THREE.Color(0x252530);
-            tubeMat.emissiveIntensity = 0.1; // Subtle inner glow for visibility
-            tubeMat.clearcoat = 0.05 + mode3DIntensity * 0.05;
-            tubeMat.clearcoatRoughness = 0.8;
-            tubeMat.metalness = 0;
-            tubeMat.roughness = 0.65; // Solid matte look
-            tubeMat.sheen = 0.03;
-            tubeMat.sheenRoughness = 0.9;
-            tubeMat.sheenColor = new THREE.Color(0x9a9aaa);
+            // Blend filament color into rubber material
+            const baseGray = new THREE.Color(0x5a5a6a);
+            tubeMat.color = baseGray.lerp(filamentColor.clone(), 0.3);
+            tubeMat.emissive = filamentColor.clone().multiplyScalar(0.15);
+            tubeMat.emissiveIntensity = 0.2 + mode3DIntensity * 0.3;
+            tubeMat.clearcoat = 0.7 + mode3DIntensity * 0.25;
+            tubeMat.clearcoatRoughness = 0.1;
+            tubeMat.metalness = 0.08;
+            tubeMat.roughness = 0.3; // Smooth rubber
+            tubeMat.sheen = 0.5;
+            tubeMat.sheenRoughness = 0.25;
+            tubeMat.sheenColor = filamentColor.clone().multiplyScalar(0.6);
+            tubeMat.opacity = 0.98;
           }
 
           filamentTube.rotation.z = rotationRef.current;
-          filamentTube.rotation.x = Math.sin(time * 0.3) * 0.1;
+          filamentTube.rotation.x = Math.sin(time * 0.3) * 0.08;
         }
 
         // Toggle visibility based on 3D mode
