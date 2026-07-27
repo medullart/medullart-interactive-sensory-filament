@@ -185,11 +185,13 @@ export function FilamentCanvas({
     const height = window.innerHeight;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+    // Physical dark space - very dark but with subtle depth/visibility
+    scene.background = new THREE.Color(0x030306);
+    scene.fog = new THREE.Fog(0x020204, 3, 15); // Fog for depth perception
     sceneRef.current = scene;
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
-    camera.position.z = 5;
+    const camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000); // Wider FOV for perspective
+    camera.position.z = 4.5;
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -232,6 +234,39 @@ export function FilamentCanvas({
     const bottomLight = new THREE.PointLight(0x333344, 0.3, 8);
     bottomLight.position.set(0, -3, 2);
     scene.add(bottomLight);
+
+    // === PHYSICAL SPACE DEPTH - subtle particles for perspective ===
+    const depthParticlesGeometry = new THREE.BufferGeometry();
+    const depthParticleCount = 80;
+    const depthPositions = new Float32Array(depthParticleCount * 3);
+    for (let i = 0; i < depthParticleCount; i++) {
+      depthPositions[i * 3] = (Math.random() - 0.5) * 12;
+      depthPositions[i * 3 + 1] = (Math.random() - 0.5) * 10;
+      depthPositions[i * 3 + 2] = -2 - Math.random() * 8; // Behind the filament
+    }
+    depthParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(depthPositions, 3));
+    const depthParticlesMaterial = new THREE.PointsMaterial({
+      color: 0x1a1a22,
+      size: 0.03,
+      transparent: true,
+      opacity: 0.4,
+      sizeAttenuation: true
+    });
+    const depthParticles = new THREE.Points(depthParticlesGeometry, depthParticlesMaterial);
+    scene.add(depthParticles);
+
+    // Subtle ground plane hint
+    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundMaterial = new THREE.MeshBasicMaterial({
+      color: 0x050508,
+      transparent: true,
+      opacity: 0.3
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -4;
+    ground.position.z = -2;
+    scene.add(ground);
 
     // === LINE FILAMENT (2D mode) ===
     const lineGeometry = new THREE.BufferGeometry();
@@ -409,8 +444,8 @@ export function FilamentCanvas({
       enterVibrationRef.current *= 0.97;
       typingWaveRef.current *= 0.94;
       
-      // Decay 3D mode intensity
-      mode3DIntensityRef.current *= 0.96;
+      // Decay 3D mode intensity - SMOOTHER transition
+      mode3DIntensityRef.current *= 0.985; // Slower decay for realistic transition
       if (mode3DIntensityRef.current < 0.01) {
         is3DModeRef.current = false;
         mode3DIntensityRef.current = 0;
@@ -477,23 +512,27 @@ export function FilamentCanvas({
             }
           }
 
-          // Mouse Y controls amplitude, Mouse X controls frequency/distortion - MORE SENSITIVE
+          // Mouse Y controls amplitude, Mouse X controls frequency/distortion - MORE BENDING
           const mouseYNorm = (mousePosition.y / window.innerHeight - 0.5);
           const mouseXNorm = (mousePosition.x / window.innerWidth - 0.5);
-          const amplitudeMod = 1 + mouseYNorm * 1.2; // Y affects amplitude (more responsive)
-          const freqMod = 1 + mouseXNorm * 0.9; // X affects frequency (more responsive)
+          const amplitudeMod = 1 + mouseYNorm * 1.8; // More amplitude for bending
+          const freqMod = 1 + mouseXNorm * 1.2; // More frequency variation
           
-          let x = Math.sin(t * freqMod + time * speedFactor * 0.3) * (0.25 + localCurvature * 0.15) * amplitudeMod + charOffsetX + horizontalPos * 0.3;
-          let y = verticalPos + Math.sin(t * 2 * freqMod + time * speedFactor * 0.2) * (0.15 + bass * 0.3) * amplitudeMod + charOffsetY;
-          let z = Math.cos(t * 3 * freqMod + time * speedFactor * 0.15) * 0.2 * amplitudeMod + charOffsetZ;
+          let x = Math.sin(t * freqMod + time * speedFactor * 0.3) * (0.35 + localCurvature * 0.25) * amplitudeMod + charOffsetX + horizontalPos * 0.4;
+          let y = verticalPos + Math.sin(t * 2 * freqMod + time * speedFactor * 0.2) * (0.2 + bass * 0.4) * amplitudeMod + charOffsetY;
+          let z = Math.cos(t * 3 * freqMod + time * speedFactor * 0.15) * 0.35 * amplitudeMod + charOffsetZ;
 
-          // Smooth mouse influence - responsive but not jittery
-          x += mouseX * (1 - Math.abs(verticalPos) / 3) * 0.6;
-          y += mouseY * 0.4;
+          // Smooth mouse influence - MORE RESPONSIVE for bending
+          x += mouseX * (1 - Math.abs(verticalPos) / 3) * 0.9;
+          y += mouseY * 0.6;
           
-          // Subtle wave following mouse position (no trembling)
-          const smoothWave = Math.sin(verticalPos * 1.5 + time * 0.3) * mouseXNorm * 0.15;
+          // More pronounced wave following mouse position
+          const smoothWave = Math.sin(verticalPos * 2 + time * 0.3) * mouseXNorm * 0.25;
           x += smoothWave;
+          
+          // Additional S-curve bending based on mouse
+          const sCurve = Math.sin(verticalPos * 1.2) * mouseYNorm * 0.4;
+          x += sCurve;
 
           // Click vibration - subtle
           if (vibration > 0.01) {
@@ -571,10 +610,12 @@ export function FilamentCanvas({
           // Dispose old geometry
           filamentTube.geometry.dispose();
           
-          // Create thick 3D tube - visible rubber/latex look
-          const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.6);
-          const tubeRadius = 0.08 + mode3DIntensity * 0.18; // Thick 3D tube
-          const newTubeGeometry = new THREE.TubeGeometry(curve, 120, tubeRadius, 32, false);
+          // Create 3D tube - SLIGHTLY THINNER, smoother curve
+          const curve = new THREE.CatmullRomCurve3(curvePoints, false, 'catmullrom', 0.5);
+          // Smoother radius transition with easing
+          const easedIntensity = mode3DIntensity * mode3DIntensity; // Ease-in for smooth transition
+          const tubeRadius = 0.04 + easedIntensity * 0.10; // Thinner tube (was 0.08 + 0.18)
+          const newTubeGeometry = new THREE.TubeGeometry(curve, 100, tubeRadius, 24, false);
           filamentTube.geometry = newTubeGeometry;
           
           // Update tube material - CINEMATIC RUBBER look
