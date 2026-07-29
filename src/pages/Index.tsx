@@ -19,8 +19,11 @@ export default function Index() {
   const [isClicking, setIsClicking] = useState(false);
   const [clickIntensity, setClickIntensity] = useState(0);
   const [enterVibration, setEnterVibration] = useState(0);
+  const [tension, setTension] = useState<{ level: 'resting' | 'active' | 'high'; percent: number }>({ level: 'resting', percent: 0 });
   const rotationAccumRef = useRef(0);
   const vertexCountRef = useRef(100);
+  const lastMouseMoveRef = useRef(0);
+  const mouseMoveAccumRef = useRef(0);
 
   const {
     inputText,
@@ -106,20 +109,43 @@ export default function Index() {
   fileAudioData :
   micAudioData;
 
-  // Track mouse position
+  // Track mouse position and tension from movement
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
+      // Track movement for tension
+      const now = Date.now();
+      if (now - lastMouseMoveRef.current < 100) {
+        mouseMoveAccumRef.current = Math.min(100, mouseMoveAccumRef.current + 5);
+      }
+      lastMouseMoveRef.current = now;
     };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        setMousePosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+        const now = Date.now();
+        if (now - lastMouseMoveRef.current < 100) {
+          mouseMoveAccumRef.current = Math.min(100, mouseMoveAccumRef.current + 8);
+        }
+        lastMouseMoveRef.current = now;
+      }
+    };
+
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+    };
   }, []);
 
-  // Handle click/tap for filament vibration + spring sound
+  // Handle click/tap for filament vibration + spring sound + high tension
   useEffect(() => {
     const handleMouseDown = () => {
       setIsClicking(true);
       setClickIntensity(1.0);
+      setTension({ level: 'high', percent: 80 });
       playSpringSound();
     };
 
@@ -130,6 +156,7 @@ export default function Index() {
     const handleTouchStart = () => {
       setIsClicking(true);
       setClickIntensity(1.0);
+      setTension({ level: 'high', percent: 80 });
       playSpringSound();
     };
 
@@ -158,11 +185,13 @@ export default function Index() {
     }
   }, [lastKeyEvent]);
 
-  // Handle Enter key - vibration + sound + color change
+  // Handle Enter key - vibration + sound + color change + high tension
   useEffect(() => {
     if (lastKeyEvent?.key === 'Enter') {
       // Trigger intense vibration on Enter (stronger than click)
       setEnterVibration(2.0);
+      // High tension on enter
+      setTension({ level: 'high', percent: 80 });
       // Play deep bass enter sound
       playEnterSound();
       // Change filament to pink
@@ -176,6 +205,8 @@ export default function Index() {
   const handleMobileEnter = useCallback(() => {
     // Trigger intense vibration on Enter (stronger than click)
     setEnterVibration(2.0);
+    // High tension on enter
+    setTension({ level: 'high', percent: 80 });
     // Play deep bass enter sound
     playEnterSound();
     // Change filament to pink
@@ -185,6 +216,27 @@ export default function Index() {
     // Trigger the keyboard hook's enter
     triggerEnter();
   }, [playEnterSound, triggerEnter]);
+
+  // Tension decay and update loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Decay movement accumulator
+      mouseMoveAccumRef.current *= 0.9;
+      
+      // Update tension based on state
+      setTension(prev => {
+        if (isClicking || enterPressed) {
+          return { level: 'high', percent: 80 };
+        } else if (mouseMoveAccumRef.current > 5) {
+          const percent = Math.min(60, Math.floor(mouseMoveAccumRef.current * 0.6));
+          return { level: 'active', percent };
+        } else {
+          return { level: 'resting', percent: 0 };
+        }
+      });
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isClicking, enterPressed]);
 
   // Handle ESC to go back to idle or close artworks
   useEffect(() => {
@@ -280,6 +332,7 @@ export default function Index() {
           inputText={inputText}
           audioActive={micActive}
           sentiment={sentiment}
+          tension={tension}
           audioData={activeAudioData}
           nodeCount={nodeCount}
           rotation={rotationAccumRef.current}

@@ -185,9 +185,9 @@ export function FilamentCanvas({
     const height = window.innerHeight;
 
     const scene = new THREE.Scene();
-    // Physical dark space - very dark but with subtle depth/visibility
-    scene.background = new THREE.Color(0x030306);
-    scene.fog = new THREE.Fog(0x020204, 3, 15); // Fog for depth perception
+    // Physical dark space - slightly lighter to see walls and floor
+    scene.background = new THREE.Color(0x08080c);
+    scene.fog = new THREE.Fog(0x060608, 4, 18); // Subtle fog for depth
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000); // Wider FOV for perspective
@@ -255,18 +255,46 @@ export function FilamentCanvas({
     const depthParticles = new THREE.Points(depthParticlesGeometry, depthParticlesMaterial);
     scene.add(depthParticles);
 
-    // Subtle ground plane hint
-    const groundGeometry = new THREE.PlaneGeometry(20, 20);
-    const groundMaterial = new THREE.MeshBasicMaterial({
-      color: 0x050508,
-      transparent: true,
-      opacity: 0.3
+    // Visible ground plane
+    const groundGeometry = new THREE.PlaneGeometry(30, 30);
+    const groundMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0a0a10,
+      roughness: 0.9,
+      metalness: 0.1
     });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -4;
-    ground.position.z = -2;
+    ground.position.y = -3.5;
+    ground.position.z = -3;
+    ground.receiveShadow = true;
     scene.add(ground);
+
+    // Back wall - visible dark surface
+    const wallGeometry = new THREE.PlaneGeometry(30, 20);
+    const wallMaterial = new THREE.MeshStandardMaterial({
+      color: 0x0c0c12,
+      roughness: 0.85,
+      metalness: 0.05
+    });
+    const backWall = new THREE.Mesh(wallGeometry, wallMaterial);
+    backWall.position.z = -8;
+    backWall.position.y = 2;
+    scene.add(backWall);
+
+    // Side walls for enclosed space feel
+    const leftWall = new THREE.Mesh(wallGeometry.clone(), wallMaterial.clone());
+    leftWall.rotation.y = Math.PI / 2;
+    leftWall.position.x = -8;
+    leftWall.position.z = -2;
+    leftWall.position.y = 2;
+    scene.add(leftWall);
+
+    const rightWall = new THREE.Mesh(wallGeometry.clone(), wallMaterial.clone());
+    rightWall.rotation.y = -Math.PI / 2;
+    rightWall.position.x = 8;
+    rightWall.position.z = -2;
+    rightWall.position.y = 2;
+    scene.add(rightWall);
 
     // === LINE FILAMENT (2D mode) ===
     const lineGeometry = new THREE.BufferGeometry();

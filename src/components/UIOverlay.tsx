@@ -8,6 +8,7 @@ interface UIOverlayProps {
   inputText: string;
   audioActive: boolean;
   sentiment: SentimentScore;
+  tension: { level: 'resting' | 'active' | 'high'; percent: number };
   audioData: AudioData;
   nodeCount: number;
   rotation: number;
@@ -32,6 +33,7 @@ export function UIOverlay({
   inputText,
   audioActive,
   sentiment,
+  tension,
   audioData,
   nodeCount,
   rotation,
@@ -192,8 +194,8 @@ export function UIOverlay({
             {fileAudioState.currentTime.toFixed(1)}s / {fileAudioState.duration.toFixed(1)}s
           </div>
         }
-        <div data-ev-id="ev_42efb69ae8" className={`font-mono text-[10px] mt-1 tracking-wide ${sentimentColor}`}>
-          SENTIMENT: {sentiment.type.toUpperCase()} [{(sentiment.intensity * 100).toFixed(0)}%]
+        <div data-ev-id="ev_42efb69ae8" className={`font-mono text-[10px] mt-1 tracking-wide ${tension.level === 'high' ? 'text-pink-400' : tension.level === 'active' ? 'text-cyan-400' : 'text-tech-gray'}`}>
+          TENSION: {tension.level === 'resting' ? 'RESTING' : `${tension.percent}%`}
         </div>
       </div>
 
