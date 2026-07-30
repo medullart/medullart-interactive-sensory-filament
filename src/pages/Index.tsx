@@ -6,6 +6,7 @@ import { UIOverlay } from '@/components/UIOverlay';
 import { MedullartWorld } from '@/components/MedullartWorld';
 import { CursorHalo } from '@/components/CursorHalo';
 import { ArtworksGallery } from '@/components/ArtworksGallery';
+import { ContactOverlay } from '@/components/ContactOverlay';
 import { useKeyboardInput } from '@/hooks/useKeyboardInput';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useFileAudioAnalyzer } from '@/hooks/useFileAudioAnalyzer';
@@ -19,7 +20,7 @@ export default function Index() {
   const [isClicking, setIsClicking] = useState(false);
   const [clickIntensity, setClickIntensity] = useState(0);
   const [enterVibration, setEnterVibration] = useState(0);
-  const [tension, setTension] = useState<{ level: 'resting' | 'active' | 'high'; percent: number }>({ level: 'resting', percent: 0 });
+  const [tension, setTension] = useState<{level: 'resting' | 'active' | 'high';percent: number;}>({ level: 'resting', percent: 0 });
   const rotationAccumRef = useRef(0);
   const vertexCountRef = useRef(100);
   const lastMouseMoveRef = useRef(0);
@@ -68,6 +69,8 @@ export default function Index() {
   const [worldViewOpen, setWorldViewOpen] = useState(false);
   const [artworksOpen, setArtworksOpen] = useState(false);
   const [artworksHovered, setArtworksHovered] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactHovered, setContactHovered] = useState(false);
   const touchStartYRef = useRef(0);
 
   // Handle swipe up on mobile to show ARTWORKS
@@ -222,9 +225,9 @@ export default function Index() {
     const interval = setInterval(() => {
       // Decay movement accumulator
       mouseMoveAccumRef.current *= 0.9;
-      
+
       // Update tension based on state
-      setTension(prev => {
+      setTension((prev) => {
         if (isClicking || enterPressed) {
           return { level: 'high', percent: 80 };
         } else if (mouseMoveAccumRef.current > 5) {
@@ -238,12 +241,14 @@ export default function Index() {
     return () => clearInterval(interval);
   }, [isClicking, enterPressed]);
 
-  // Handle ESC to go back to idle or close artworks
+  // Handle ESC to go back to idle or close overlays (priority: artworks > contact > video > map)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (artworksOpen) {
           setArtworksOpen(false);
+        } else if (contactOpen) {
+          setContactOpen(false);
         } else if (systemMode === 'render') {
           stopFile();
           setSystemMode('idle');
@@ -252,7 +257,7 @@ export default function Index() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [systemMode, stopFile, artworksOpen]);
+  }, [systemMode, stopFile, artworksOpen, contactOpen]);
 
   const handleMicToggle = useCallback(() => {
     if (micActive) {
@@ -416,6 +421,68 @@ export default function Index() {
       <ArtworksGallery
         isOpen={artworksOpen}
         onClose={() => setArtworksOpen(false)} />
+
+      {/* Contact trigger - Left side hover zone */}
+      {systemMode === 'idle' && !worldViewOpen && !artworksOpen && !contactOpen &&
+      <>
+        {/* Desktop: hover zone on left */}
+        <div data-ev-id="ev_f63c196558"
+        className="fixed top-0 left-0 bottom-0 w-[15vw] z-20 hidden md:flex items-center justify-start pl-6 pointer-events-none"
+        onMouseEnter={() => setContactHovered(true)}
+        onMouseLeave={() => setContactHovered(false)}>
+
+          {/* Invisible hover detector */}
+          <div data-ev-id="ev_7831d263b2"
+          className="absolute top-0 left-0 bottom-0 w-full pointer-events-auto"
+          onMouseEnter={() => setContactHovered(true)}
+          onMouseLeave={() => setContactHovered(false)} />
+
+
+          {/* Clickable area near the word */}
+          <span data-ev-id="ev_7416d1a043"
+          className={`font-mono text-[11px] tracking-[0.4em] transition-all duration-300 cursor-pointer pointer-events-auto px-6 py-8 writing-mode-vertical ${
+          contactHovered ?
+          'text-white opacity-100 scale-105' :
+          'text-white/0 opacity-0 scale-100'}`
+          }
+          style={{
+            writingMode: 'vertical-rl',
+            textOrientation: 'mixed',
+            textShadow: contactHovered ?
+            '0 0 15px rgba(139, 92, 246, 0.8), 0 0 30px rgba(139, 92, 246, 0.6), 0 0 50px rgba(139, 92, 246, 0.4)' :
+            'none'
+          }}
+          onClick={() => setContactOpen(true)}>
+
+            CONTACT
+          </span>
+        </div>
+
+        {/* Mobile: small button at bottom left */}
+        <div data-ev-id="ev_714eee0911"
+        className="fixed bottom-24 left-4 z-20 md:hidden"
+        onClick={() => setContactOpen(true)}>
+
+          <span data-ev-id="ev_69d54980c1"
+          className="font-mono text-[9px] tracking-[0.3em] text-violet-400/60 hover:text-violet-400 transition-colors cursor-pointer"
+          style={{ textShadow: '0 0 10px rgba(139, 92, 246, 0.4)' }}>
+
+            CONTACT
+          </span>
+        </div>
+      </>
+      }
+
+      {/* Contact Overlay */}
+      <ContactOverlay
+        isOpen={contactOpen}
+        onClose={() => setContactOpen(false)}
+        onHoverButton={(hovering) => {
+          if (hovering) {
+            setClickIntensity(0.3);
+          }
+        }} />
+
 
     </div>);
 

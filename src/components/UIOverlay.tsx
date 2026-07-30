@@ -194,7 +194,7 @@ export function UIOverlay({
             {fileAudioState.currentTime.toFixed(1)}s / {fileAudioState.duration.toFixed(1)}s
           </div>
         }
-        <div data-ev-id="ev_42efb69ae8" className={`font-mono text-[10px] mt-1 tracking-wide ${tension.level === 'high' ? 'text-pink-400' : tension.level === 'active' ? 'text-cyan-400' : 'text-tech-gray'}`}>
+        <div data-ev-id="ev_42efb69ae8" className={`font-mono text-[10px] mt-1 tracking-wide ${tension.level === 'high' ? 'text-violet-400' : tension.level === 'active' ? 'text-violet-400/70' : 'text-violet-400/50'}`}>
           TENSION: {tension.level === 'resting' ? 'RESTING' : `${tension.percent}%`}
         </div>
       </div>
@@ -249,7 +249,7 @@ export function UIOverlay({
           <div data-ev-id="ev_f879efb5c9" className="flex gap-3">
             <button data-ev-id="ev_929b2571b8"
             onClick={() => fileInputRef.current?.click()}
-            className="font-mono text-[11px] text-cyan-400/70 tracking-wider border-2 border-cyan-400/40 px-4 py-2 transition-all duration-300 hover:text-white hover:border-cyan-400 hover:bg-cyan-400/20 hover:shadow-[0_0_20px_rgba(0,255,255,0.4)] hover:scale-105 active:scale-95">
+            className="font-mono text-[11px] text-violet-400/70 tracking-wider border-2 border-violet-400/40 px-4 py-2 transition-all duration-300 hover:text-white hover:border-violet-400 hover:bg-violet-400/20 hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:scale-105 active:scale-95">
               [ + UPLOAD_AUDIO ]
             </button>
             <input data-ev-id="ev_787157af60"
