@@ -66,6 +66,7 @@ export function FilamentCanvas({
   const mode3DIntensityRef = useRef(0);
   const typingWaveRef = useRef(0);
   const lastTextLengthRef = useRef(0);
+  const roomGroupRef = useRef<THREE.Group | null>(null);
 
   // Particle system refs
   const sparksRef = useRef<Spark[]>([]);
@@ -235,66 +236,175 @@ export function FilamentCanvas({
     bottomLight.position.set(0, -3, 2);
     scene.add(bottomLight);
 
-    // === PHYSICAL SPACE DEPTH - subtle particles for perspective ===
-    const depthParticlesGeometry = new THREE.BufferGeometry();
-    const depthParticleCount = 80;
-    const depthPositions = new Float32Array(depthParticleCount * 3);
-    for (let i = 0; i < depthParticleCount; i++) {
-      depthPositions[i * 3] = (Math.random() - 0.5) * 12;
-      depthPositions[i * 3 + 1] = (Math.random() - 0.5) * 10;
-      depthPositions[i * 3 + 2] = -2 - Math.random() * 8; // Behind the filament
-    }
-    depthParticlesGeometry.setAttribute('position', new THREE.BufferAttribute(depthPositions, 3));
-    const depthParticlesMaterial = new THREE.PointsMaterial({
-      color: 0x1a1a22,
-      size: 0.03,
-      transparent: true,
-      opacity: 0.4,
-      sizeAttenuation: true
-    });
-    const depthParticles = new THREE.Points(depthParticlesGeometry, depthParticlesMaterial);
-    scene.add(depthParticles);
+    // === GEOMETRIC BLACK PLASTIC ROOM ===
+    const roomGroup = new THREE.Group();
+    scene.add(roomGroup);
+    roomGroupRef.current = roomGroup;
 
-    // Visible ground plane
-    const groundGeometry = new THREE.PlaneGeometry(30, 30);
-    const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0a0a10,
-      roughness: 0.9,
-      metalness: 0.1
+    // Black plastic material - glossy, reflective
+    const plasticMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x0a0a0e,
+      metalness: 0.0,
+      roughness: 0.25,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.2,
+      reflectivity: 0.4,
+      envMapIntensity: 0.3
     });
-    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -3.5;
-    ground.position.z = -3;
-    ground.receiveShadow = true;
-    scene.add(ground);
 
-    // Back wall - visible dark surface
-    const wallGeometry = new THREE.PlaneGeometry(30, 20);
-    const wallMaterial = new THREE.MeshStandardMaterial({
+    // Slightly different material for variation
+    const plasticMaterial2 = new THREE.MeshPhysicalMaterial({
       color: 0x0c0c12,
-      roughness: 0.85,
-      metalness: 0.05
+      metalness: 0.0,
+      roughness: 0.3,
+      clearcoat: 0.5,
+      clearcoatRoughness: 0.25,
+      reflectivity: 0.35
     });
-    const backWall = new THREE.Mesh(wallGeometry, wallMaterial);
-    backWall.position.z = -8;
-    backWall.position.y = 2;
-    scene.add(backWall);
 
-    // Side walls for enclosed space feel
-    const leftWall = new THREE.Mesh(wallGeometry.clone(), wallMaterial.clone());
+    // Edge/seam material - subtle highlight
+    const seamMaterial = new THREE.MeshBasicMaterial({
+      color: 0x151520,
+      transparent: true,
+      opacity: 0.8
+    });
+
+    // Room dimensions
+    const roomWidth = 16;
+    const roomHeight = 10;
+    const roomDepth = 14;
+
+    // Floor - with subtle grid panels
+    const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth, 8, 8);
+    const floor = new THREE.Mesh(floorGeometry, plasticMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -4;
+    floor.position.z = -3;
+    floor.receiveShadow = true;
+    roomGroup.add(floor);
+
+    // Floor grid lines
+    const floorGridGeometry = new THREE.EdgesGeometry(floorGeometry);
+    const floorGrid = new THREE.LineSegments(floorGridGeometry, new THREE.LineBasicMaterial({ color: 0x12121a, transparent: true, opacity: 0.5 }));
+    floorGrid.rotation.x = -Math.PI / 2;
+    floorGrid.position.y = -3.99;
+    floorGrid.position.z = -3;
+    roomGroup.add(floorGrid);
+
+    // Ceiling
+    const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomDepth, 6, 6);
+    const ceiling = new THREE.Mesh(ceilingGeometry, plasticMaterial2);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = 5;
+    ceiling.position.z = -3;
+    roomGroup.add(ceiling);
+
+    // Back wall - main panel
+    const backWallGeometry = new THREE.PlaneGeometry(roomWidth, roomHeight, 4, 3);
+    const backWall = new THREE.Mesh(backWallGeometry, plasticMaterial);
+    backWall.position.z = -10;
+    backWall.position.y = 0.5;
+    roomGroup.add(backWall);
+
+    // Back wall edge lines
+    const backWallEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(backWallGeometry),
+      new THREE.LineBasicMaterial({ color: 0x15151f, transparent: true, opacity: 0.4 })
+    );
+    backWallEdges.position.copy(backWall.position);
+    backWallEdges.position.z += 0.01;
+    roomGroup.add(backWallEdges);
+
+    // Left wall
+    const sideWallGeometry = new THREE.PlaneGeometry(roomDepth, roomHeight, 4, 3);
+    const leftWall = new THREE.Mesh(sideWallGeometry, plasticMaterial2);
     leftWall.rotation.y = Math.PI / 2;
-    leftWall.position.x = -8;
-    leftWall.position.z = -2;
-    leftWall.position.y = 2;
-    scene.add(leftWall);
+    leftWall.position.x = -roomWidth / 2;
+    leftWall.position.z = -3;
+    leftWall.position.y = 0.5;
+    roomGroup.add(leftWall);
 
-    const rightWall = new THREE.Mesh(wallGeometry.clone(), wallMaterial.clone());
+    // Left wall edges
+    const leftWallEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(sideWallGeometry),
+      new THREE.LineBasicMaterial({ color: 0x15151f, transparent: true, opacity: 0.3 })
+    );
+    leftWallEdges.rotation.y = Math.PI / 2;
+    leftWallEdges.position.set(-roomWidth / 2 + 0.01, 0.5, -3);
+    roomGroup.add(leftWallEdges);
+
+    // Right wall
+    const rightWall = new THREE.Mesh(sideWallGeometry, plasticMaterial2);
     rightWall.rotation.y = -Math.PI / 2;
-    rightWall.position.x = 8;
-    rightWall.position.z = -2;
-    rightWall.position.y = 2;
-    scene.add(rightWall);
+    rightWall.position.x = roomWidth / 2;
+    rightWall.position.z = -3;
+    rightWall.position.y = 0.5;
+    roomGroup.add(rightWall);
+
+    // Right wall edges
+    const rightWallEdges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(sideWallGeometry),
+      new THREE.LineBasicMaterial({ color: 0x15151f, transparent: true, opacity: 0.3 })
+    );
+    rightWallEdges.rotation.y = -Math.PI / 2;
+    rightWallEdges.position.set(roomWidth / 2 - 0.01, 0.5, -3);
+    roomGroup.add(rightWallEdges);
+
+    // Corner seams - vertical edges
+    const seamGeometry = new THREE.BoxGeometry(0.05, roomHeight, 0.05);
+    const cornerSeamBackLeft = new THREE.Mesh(seamGeometry, seamMaterial);
+    cornerSeamBackLeft.position.set(-roomWidth / 2, 0.5, -10);
+    roomGroup.add(cornerSeamBackLeft);
+
+    const cornerSeamBackRight = new THREE.Mesh(seamGeometry, seamMaterial);
+    cornerSeamBackRight.position.set(roomWidth / 2, 0.5, -10);
+    roomGroup.add(cornerSeamBackRight);
+
+    // Horizontal seams at floor/wall junction
+    const hSeamGeometry = new THREE.BoxGeometry(roomWidth, 0.03, 0.03);
+    const floorSeamBack = new THREE.Mesh(hSeamGeometry, seamMaterial);
+    floorSeamBack.position.set(0, -4, -10);
+    roomGroup.add(floorSeamBack);
+
+    // Add geometric accent panels on back wall
+    const panelGeometry = new THREE.PlaneGeometry(2.5, 3.5);
+    const panelMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x08080c,
+      metalness: 0.0,
+      roughness: 0.2,
+      clearcoat: 0.8,
+      clearcoatRoughness: 0.1
+    });
+
+    // Left panel
+    const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    leftPanel.position.set(-4, 0.5, -9.9);
+    roomGroup.add(leftPanel);
+
+    // Right panel
+    const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+    rightPanel.position.set(4, 0.5, -9.9);
+    roomGroup.add(rightPanel);
+
+    // Small geometric shapes for depth
+    const hexGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 6);
+    const hexMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x0e0e14,
+      metalness: 0.1,
+      roughness: 0.2,
+      clearcoat: 0.9
+    });
+
+    for (let i = 0; i < 5; i++) {
+      const hex = new THREE.Mesh(hexGeometry, hexMaterial);
+      hex.rotation.x = Math.PI / 2;
+      hex.position.set(
+        (Math.random() - 0.5) * 10,
+        -3.97,
+        -2 - Math.random() * 6
+      );
+      roomGroup.add(hex);
+    }
 
     // === LINE FILAMENT (2D mode) ===
     const lineGeometry = new THREE.BufferGeometry();
@@ -484,6 +594,18 @@ export function FilamentCanvas({
       const renderer = rendererRef.current;
       const filamentLine = filamentLineRef.current;
       const filamentTube = filamentTubeRef.current;
+      const roomGroup = roomGroupRef.current;
+
+      // Room perspective movement based on mouse
+      if (roomGroup) {
+        const targetRoomRotY = mouseInfluenceRef.current.x * 0.08;
+        const targetRoomRotX = mouseInfluenceRef.current.y * 0.05;
+        roomGroup.rotation.y += (targetRoomRotY - roomGroup.rotation.y) * 0.05;
+        roomGroup.rotation.x += (targetRoomRotX - roomGroup.rotation.x) * 0.05;
+        // Subtle position shift for parallax
+        roomGroup.position.x += (-mouseInfluenceRef.current.x * 0.3 - roomGroup.position.x) * 0.03;
+        roomGroup.position.y += (-mouseInfluenceRef.current.y * 0.2 - roomGroup.position.y) * 0.03;
+      }
 
       if (filamentLine && filamentTube && scene && camera && renderer) {
         const time = timeRef.current;

@@ -422,25 +422,25 @@ export default function Index() {
         isOpen={artworksOpen}
         onClose={() => setArtworksOpen(false)} />
 
-      {/* Contact trigger - Left side hover zone */}
-      {systemMode === 'idle' && !worldViewOpen && !artworksOpen && !contactOpen &&
+      {/* Contact trigger - Left side hover zone (wider, easier to trigger) */}
+      {systemMode === 'idle' && !worldViewOpen && !artworksOpen &&
       <>
-        {/* Desktop: hover zone on left */}
-        <div data-ev-id="ev_f63c196558"
-        className="fixed top-0 left-0 bottom-0 w-[15vw] z-20 hidden md:flex items-center justify-start pl-6 pointer-events-none"
+        {/* Desktop: wide hover zone on left - 25vw for easy access */}
+        <div data-ev-id="ev_f728c98f71"
+        className="fixed top-0 left-0 bottom-0 w-[25vw] z-20 hidden md:flex items-center justify-start pl-8 pointer-events-none"
         onMouseEnter={() => setContactHovered(true)}
         onMouseLeave={() => setContactHovered(false)}>
 
-          {/* Invisible hover detector */}
-          <div data-ev-id="ev_7831d263b2"
+          {/* Invisible hover detector covering full area */}
+          <div data-ev-id="ev_e53c01e98d"
           className="absolute top-0 left-0 bottom-0 w-full pointer-events-auto"
           onMouseEnter={() => setContactHovered(true)}
           onMouseLeave={() => setContactHovered(false)} />
 
 
-          {/* Clickable area near the word */}
-          <span data-ev-id="ev_7416d1a043"
-          className={`font-mono text-[11px] tracking-[0.4em] transition-all duration-300 cursor-pointer pointer-events-auto px-6 py-8 writing-mode-vertical ${
+          {/* Clickable word - always clickable when visible */}
+          <span data-ev-id="ev_e5dae0beef"
+          className={`font-mono text-[12px] tracking-[0.4em] transition-all duration-300 cursor-pointer pointer-events-auto px-8 py-10 ${
           contactHovered ?
           'text-white opacity-100 scale-105' :
           'text-white/0 opacity-0 scale-100'}`
@@ -449,23 +449,23 @@ export default function Index() {
             writingMode: 'vertical-rl',
             textOrientation: 'mixed',
             textShadow: contactHovered ?
-            '0 0 15px rgba(139, 92, 246, 0.8), 0 0 30px rgba(139, 92, 246, 0.6), 0 0 50px rgba(139, 92, 246, 0.4)' :
+            '0 0 15px rgba(139, 92, 246, 0.9), 0 0 30px rgba(139, 92, 246, 0.7), 0 0 60px rgba(139, 92, 246, 0.5)' :
             'none'
           }}
-          onClick={() => setContactOpen(true)}>
+          onClick={() => !contactOpen && setContactOpen(true)}>
 
             CONTACT
           </span>
         </div>
 
-        {/* Mobile: small button at bottom left */}
-        <div data-ev-id="ev_714eee0911"
+        {/* Mobile: visible button at bottom left */}
+        <div data-ev-id="ev_ed16d48c0b"
         className="fixed bottom-24 left-4 z-20 md:hidden"
-        onClick={() => setContactOpen(true)}>
+        onClick={() => !contactOpen && setContactOpen(true)}>
 
-          <span data-ev-id="ev_69d54980c1"
-          className="font-mono text-[9px] tracking-[0.3em] text-violet-400/60 hover:text-violet-400 transition-colors cursor-pointer"
-          style={{ textShadow: '0 0 10px rgba(139, 92, 246, 0.4)' }}>
+          <span data-ev-id="ev_c8670e11b4"
+          className="font-mono text-[10px] tracking-[0.3em] text-violet-400/70 hover:text-violet-400 transition-colors cursor-pointer px-3 py-2"
+          style={{ textShadow: '0 0 12px rgba(139, 92, 246, 0.5)' }}>
 
             CONTACT
           </span>
