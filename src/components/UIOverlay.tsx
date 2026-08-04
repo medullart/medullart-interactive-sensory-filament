@@ -194,7 +194,7 @@ export function UIOverlay({
             {fileAudioState.currentTime.toFixed(1)}s / {fileAudioState.duration.toFixed(1)}s
           </div>
         }
-        <div data-ev-id="ev_42efb69ae8" className={`font-mono text-[10px] mt-1 tracking-wide ${tension.level === 'high' ? 'text-violet-400' : tension.level === 'active' ? 'text-violet-400/70' : 'text-violet-400/50'}`}>
+        <div data-ev-id="ev_42efb69ae8" className={`font-mono text-[10px] mt-1 tracking-wide ${tension.level === 'high' ? 'text-[#00ffcc]' : tension.level === 'active' ? 'text-violet-400/70' : 'text-violet-400/50'}`} style={{ textShadow: tension.level === 'high' ? '0 0 10px #00ffcc, 0 0 20px #00ffcc' : 'none' }}>
           TENSION: {tension.level === 'resting' ? 'RESTING' : `${tension.percent}%`}
         </div>
       </div>

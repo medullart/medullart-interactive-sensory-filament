@@ -186,9 +186,9 @@ export function FilamentCanvas({
     const height = window.innerHeight;
 
     const scene = new THREE.Scene();
-    // Physical dark space - slightly lighter to see walls and floor
-    scene.background = new THREE.Color(0x08080c);
-    scene.fog = new THREE.Fog(0x060608, 4, 18); // Subtle fog for depth
+    // Lighter background to see the 3D room clearly
+    scene.background = new THREE.Color(0x0c0c12);
+    scene.fog = new THREE.Fog(0x0a0a10, 6, 25); // Lighter fog, further range
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000); // Wider FOV for perspective
@@ -199,12 +199,12 @@ export function FilamentCanvas({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.9;
+    renderer.toneMappingExposure = 1.1; // Brighter exposure
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // === IMPROVED 3D LIGHTING - cinematic, rubber/latex visible ===
-    const ambientLight = new THREE.AmbientLight(0x1a1a2a, 0.4);
+    // === IMPROVED 3D LIGHTING - brighter for visible room ===
+    const ambientLight = new THREE.AmbientLight(0x2a2a3a, 0.6); // Brighter ambient
     scene.add(ambientLight);
 
     // Strong key light from front-right for 3D definition
@@ -241,32 +241,32 @@ export function FilamentCanvas({
     scene.add(roomGroup);
     roomGroupRef.current = roomGroup;
 
-    // Black plastic material - glossy, reflective
+    // Black plastic material - glossy, more visible
     const plasticMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x0a0a0e,
+      color: 0x12121a,
+      metalness: 0.0,
+      roughness: 0.2,
+      clearcoat: 0.7,
+      clearcoatRoughness: 0.15,
+      reflectivity: 0.5,
+      envMapIntensity: 0.4
+    });
+
+    // Slightly different material for walls - more visible
+    const plasticMaterial2 = new THREE.MeshPhysicalMaterial({
+      color: 0x14141c,
       metalness: 0.0,
       roughness: 0.25,
       clearcoat: 0.6,
       clearcoatRoughness: 0.2,
-      reflectivity: 0.4,
-      envMapIntensity: 0.3
+      reflectivity: 0.45
     });
 
-    // Slightly different material for variation
-    const plasticMaterial2 = new THREE.MeshPhysicalMaterial({
-      color: 0x0c0c12,
-      metalness: 0.0,
-      roughness: 0.3,
-      clearcoat: 0.5,
-      clearcoatRoughness: 0.25,
-      reflectivity: 0.35
-    });
-
-    // Edge/seam material - subtle highlight
+    // Edge/seam material - visible highlight
     const seamMaterial = new THREE.MeshBasicMaterial({
-      color: 0x151520,
+      color: 0x1e1e2a,
       transparent: true,
-      opacity: 0.8
+      opacity: 0.9
     });
 
     // Room dimensions
@@ -283,9 +283,9 @@ export function FilamentCanvas({
     floor.receiveShadow = true;
     roomGroup.add(floor);
 
-    // Floor grid lines
+    // Floor grid lines - more visible
     const floorGridGeometry = new THREE.EdgesGeometry(floorGeometry);
-    const floorGrid = new THREE.LineSegments(floorGridGeometry, new THREE.LineBasicMaterial({ color: 0x12121a, transparent: true, opacity: 0.5 }));
+    const floorGrid = new THREE.LineSegments(floorGridGeometry, new THREE.LineBasicMaterial({ color: 0x1a1a25, transparent: true, opacity: 0.7 }));
     floorGrid.rotation.x = -Math.PI / 2;
     floorGrid.position.y = -3.99;
     floorGrid.position.z = -3;
