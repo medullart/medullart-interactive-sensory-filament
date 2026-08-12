@@ -452,16 +452,16 @@ export default function Index() {
             '0 0 15px rgba(139, 92, 246, 0.9), 0 0 30px rgba(139, 92, 246, 0.7), 0 0 60px rgba(139, 92, 246, 0.5)' :
             'none'
           }}
-          onClick={() => setContactOpen(true)}>
-
+          onClick={(e) => {e.stopPropagation();setContactOpen(true);}}>
             CONTACT
           </span>
         </div>
 
         {/* Mobile: visible button at bottom left */}
-        <div data-ev-id="ev_ed16d48c0b"
+        <div data-ev-id="ev_93d5a75746"
         className="fixed bottom-24 left-4 z-20 md:hidden"
-        onClick={() => setContactOpen(true)}>
+        onClick={(e) => {e.stopPropagation();setContactOpen(true);}}>
+
 
           <span data-ev-id="ev_c8670e11b4"
           className="font-mono text-[10px] tracking-[0.3em] text-violet-400/70 hover:text-violet-400 transition-colors cursor-pointer px-3 py-2"

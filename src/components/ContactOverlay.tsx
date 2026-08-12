@@ -32,9 +32,14 @@ export function ContactOverlay({ isOpen, onClose, onHoverButton }: ContactOverla
       }
     };
     if (isOpen) {
-      setTimeout(() => {
+      // Longer delay to prevent immediate closing from trigger click
+      const timeoutId = setTimeout(() => {
         window.addEventListener('click', handleClickOutside);
-      }, 100);
+      }, 300);
+      return () => {
+        clearTimeout(timeoutId);
+        window.removeEventListener('click', handleClickOutside);
+      };
     }
     return () => window.removeEventListener('click', handleClickOutside);
   }, [isOpen, onClose]);
